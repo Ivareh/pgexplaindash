@@ -1,0 +1,17 @@
+[script|DEBUG|pom_db_optimize_script]: 2025-03-06T21:19:01+0100: 'Function execute_sql_stmt' took 421.34 ms to execute
+[script|DEBUG|pom_db_optimize_script]: 2025-03-06T21:19:58+0100: 'Function execute_sql_stmt' took 437.50 ms to execute
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:23:50+0100: 'Table (<sqlalchemy.sql.elements.TextClause object at 0x72d34eabd7f0>, 'item&item_modifier&currency', "Watcher's eye with increased maximum life")  took 452.76 ms to execute
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:24:17+0100: 'Table ('item&item_modifier&currency', "Watcher's eye with increased maximum life")  took 429.60 ms to execute
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:27:50+0100: 'Query ()  took 419.41 ms to execute
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:28:13+0100: 'Query ('item&item_modifier&currency', "Watcher's eye with increased maximum life", '1week')  took 435.28 ms to execute
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:28:40+0100: 'Query ['mods', 'time']  took 443.49 ms to execute
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:28:51+0100: 'Query ["Watcher's eye with increased maximum life", '1week']  took 434.89 ms to execute
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:29:06+0100: 'Query ['item&item_modifier&currency', "Watcher's eye with increased maximum life", '1week']  took 430.36 ms to execute
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:36:53+0100: 'Query ['item&item_modifier&currency', "Watcher's eye with increased maximum life", '1week']  took 438.70 ms to execute
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:37:52+0100: '['item&item_modifier&currency', "Watcher's eye with increased maximum life", '1week']:430.74 ms
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:38:02+0100: '['item&item_modifier&currency', "Watcher's eye with increased maximum life", '1week']:433.29ms
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:39:33+0100: '['item&item_modifier&currency', "Watcher's eye with increased maximum life", '1week']:378.82ms
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:40:18+0100: '['item&item_modifier&currency', "Watcher's eye with increased maximum life", '1week']:438.18ms
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:40:28+0100: '['item&item_modifier&currency', "Watcher's eye with increased maximum life", '1week']:446.95ms
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:50:59+0100: '['item&item_modifier&currency', "Watcher's eye with increased maximum life", '1week']:447.53ms
+[script|INFO|pom_db_optimize_script]: 2025-03-06T21:51:31+0100: '['item&item_modifier&currency', "Watcher's eye with increased maximum life", '1week']:437.06ms

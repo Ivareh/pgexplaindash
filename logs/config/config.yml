@@ -1,0 +1,53 @@
+version: 1
+disable_existing_loggers: false
+formatters:
+  simple:
+    format: "[%(name)s|%(levelname)s|%(module)s]: %(asctime)s: %(message)s"
+    datefmt: "%Y-%m-%dT%H:%M:%S%z"
+  explain_anal_json:
+    (): logs.config.JSONFormatter
+    fmt_keys:
+      logger: name
+      level: levelname
+      timestamp: timestamp
+      message: message
+handlers:
+  stdout:
+    class: logging.StreamHandler
+    level: DEBUG
+    filters: []
+    formatter: simple
+    stream: "ext://sys.stdout"
+  file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    filters: []
+    formatter: simple
+    filename: "logs/db_logs.log"
+    maxBytes: 504857600 # 500 mb
+    backupCount: 2
+  exp_anal_file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    filters: []
+    formatter: explain_anal_json
+    filename: "logs/explain_analyze_out.log"
+    maxBytes: 504857600 # 500 mb
+    backupCount: 2
+loggers:
+  script:
+    level: DEBUG
+    handlers:
+      - file
+    propagate: no
+  explain_analyze:
+    level: DEBUG
+    handlers:
+      - exp_anal_file
+    propagate: no
+root:
+  level: INFO
+  handlers:
+    - stdout
+    - file
+    - exp_anal_file
