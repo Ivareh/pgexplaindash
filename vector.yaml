@@ -1,0 +1,58 @@
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  db-optimize-logger:
+    type: docker_logs
+    include_images:
+      - dol
+    docker_host: unix:///var/run/docker.sock
+
+transforms:
+  transform-db-optimize-logs:
+    type: remap
+    inputs:
+      - db-optimize-logger
+    drop_on_abort: true
+    file: ./transformers/db-optimize-events.vrl
+    source: |-
+      container_name = .container_name
+
+      # Check if the message is valid JSON before attempting to parse
+      if starts_with!(.message, "{") {
+        . = parse_json!(.message)
+      } else {
+        abort
+      }
+
+      .container_name = container_name
+
+      if .logger == "explain_analyze" {
+        message_keys = parse_key_value!(.message)
+      }
+
+
+    timezone: local
+
+sinks:
+  console:
+    inputs:
+      - transform-db-optimize-logs
+    target: stdout
+    type: console
+    encoding:
+      codec: json
+
+  loki:
+    type: loki
+    inputs:
+      - transform-db-optimize-logs
+    endpoint: http://loki:3100
+    out_of_order_action: accept
+    compression: snappy
+    encoding:
+      codec: json
+    labels:
+      job: "vector"
+    healthcheck: false

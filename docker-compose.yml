@@ -1,0 +1,66 @@
+services:
+  db-optimize-logger:
+    image: dol
+    env_file:
+      - .env
+    build:
+      context: ./db-optimize-logger
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+
+
+  vector:
+    container_name: dol-vector
+    image: timberio/vector:0.41.1-debian
+    restart: "no"
+    ports:
+      - "8686:8686"
+    env_file:
+      - .env
+    volumes:
+      - ./vector.yaml:/etc/vector/vector.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  loki:
+    container_name: dol-loki
+    image: grafana/loki:main
+    restart: "no"
+    ports:
+      - "3100:3100"
+    env_file:
+      - .env
+    volumes:
+      - ./loki.yaml:/etc/loki/local-config.yaml
+      - loki-data:/var/lib/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  grafana:
+    container_name: dol-grafana
+    image: grafana/grafana:latest
+    restart: "no" # or use `on-failure` if you prefer automatic restarts on crashes
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME?Grafana username not set}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD?Grafan password not set}
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_AUTH_BASIC_ENABLED=false
+      - GF_FEATURE_TOGGLES_ENABLE=accessControlOnCall
+      - GF_INSTALL_PLUGINS=https://storage.googleapis.com/integration-artifacts/grafana-lokiexplore-app/grafana-lokiexplore-app-latest.zip;grafana-lokiexplore-app
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning # single volume for provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    entrypoint: >
+      sh -c "mkdir -p /etc/grafana/provisioning/datasources /etc/grafana/provisioning/dashboards /etc/grafana/provisioning/plugins /etc/grafana/provisioning/alerting &&
+      /run.sh"  # ensure directories exist
+
+
+volumes:
+  grafana-data:
+    name: "dol-grafana-data"
+  loki-data:
+    name: "dol-loki-data"
+
