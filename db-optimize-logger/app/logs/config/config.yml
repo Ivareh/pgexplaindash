@@ -16,22 +16,22 @@ handlers:
     class: logging.StreamHandler
     level: DEBUG
     filters: []
-    formatter: simple
+    formatter: explain_anal_json
     stream: "ext://sys.stdout"
   file:
     class: logging.handlers.RotatingFileHandler
     level: DEBUG
     filters: []
     formatter: simple
-    filename: "logs/db_logs.log"
+    filename: "app/logs/db_logs.log"
     maxBytes: 504857600 # 500 mb
     backupCount: 2
   exp_anal_file:
     class: logging.handlers.RotatingFileHandler
     level: DEBUG
     filters: []
-    formatter: explain_anal_json
-    filename: "logs/explain_analyze_out.log"
+    formatter: simple
+    filename: "app/logs/explain_analyze_out.log"
     maxBytes: 504857600 # 500 mb
     backupCount: 2
 loggers:
@@ -39,11 +39,13 @@ loggers:
     level: DEBUG
     handlers:
       - file
+      - stdout
     propagate: no
   explain_analyze:
     level: DEBUG
     handlers:
       - exp_anal_file
+      - stdout
     propagate: no
 root:
   level: INFO

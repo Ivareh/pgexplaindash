@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from utils import sync_timing_tracker
 
 engine = create_engine(
-    "postgresql+psycopg2://pom_oltp_superuser:changethis@localhost:5432/pom_oltp_db"
+    "postgresql+psycopg2://pom_oltp_superuser:changethis@db:5432/pom_oltp_db"
 )
 
 

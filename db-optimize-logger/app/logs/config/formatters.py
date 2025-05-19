@@ -51,7 +51,7 @@ class JSONFormatter(logging.Formatter):
         always_fields = {
             "message": record.getMessage(),
             "timestamp": dt.datetime.fromtimestamp(
-                record.created, tz=dt.UTC
+                record.created, tz=dt.timezone.utc
             ).isoformat(),
         }
         if record.exc_info is not None:
