@@ -7,6 +7,10 @@ services:
       context: ./db-optimize-logger
       args:
         INSTALL_DEV: ${INSTALL_DEV-false}
+    networks:
+      - ${NETWORK?Variable not set}
+    volumes:
+      - ./db-optimize-logger/:/app
 
 
   vector:
@@ -17,8 +21,11 @@ services:
       - "8686:8686"
     env_file:
       - .env
+    networks:
+      - ${NETWORK?Variable not set}
     volumes:
-      - ./vector.yaml:/etc/vector/vector.yaml:ro
+      - ./vector/vector.yaml:/etc/vector/vector.yaml:ro
+      - ./vector/transformers:/etc/vector/transformers:ro
       - /var/run/docker.sock:/var/run/docker.sock
 
   loki:
@@ -29,6 +36,8 @@ services:
       - "3100:3100"
     env_file:
       - .env
+    networks:
+      - ${NETWORK?Variable not set}
     volumes:
       - ./loki.yaml:/etc/loki/local-config.yaml
       - loki-data:/var/lib/loki
@@ -42,6 +51,8 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    networks:
+      - ${NETWORK?Variable not set}
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME?Grafana username not set}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD?Grafan password not set}
@@ -64,3 +75,6 @@ volumes:
   loki-data:
     name: "dol-loki-data"
 
+networks:
+  traefik-public:
+    external: true
