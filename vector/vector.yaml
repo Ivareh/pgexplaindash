@@ -7,37 +7,36 @@ sources:
     type: docker_logs
     include_images:
       - dol
-    docker_host: unix:///var/run/docker.sock
+
+  response-outputs:
+    type: file
+    include:
+      - /var/log/responses_output/*.json
+    read_from: beginning
+    fingerprint:
+      ignored_header_bytes: 0
+      strategy: checksum
+    ignore_checkpoints: false
+    multiline:
+      mode: halt_with
+      condition_pattern: "^$"
+      start_pattern: "^\\{"
+      timeout_ms: 100
+
 
 transforms:
-  transform_docker_logs:
+  transform-db-optimize-logs:
     type: remap
     inputs:
-      - db-optimize-logger
-    drop_on_abort: true
-    source: |-
-      container_name = .container_name
-
-      # Check if the message is valid JSON before attempting to parse
-      if starts_with!(.message, "{") {
-        . = parse_json!(.message)
-      } else {
-        abort
-      }
-
-      .container_name = container_name
-
-      if .logger == "explain_analyze" {
-        message_keys = parse_key_value!(.message)
-      }
-
-
+      - response-outputs
+    drop_on_abort: false
+    file: /etc/vector/transformers/db-optimize-events.vrl
     timezone: local
 
 sinks:
   console:
     inputs:
-      - transform_docker_logs
+      - transform-db-optimize-logs
     target: stdout
     type: console
     encoding:
@@ -46,7 +45,7 @@ sinks:
   loki:
     type: loki
     inputs:
-      - transform_docker_logs
+      - transform-db-optimize-logs
     endpoint: http://loki:3100
     out_of_order_action: accept
     compression: snappy
@@ -55,3 +54,4 @@ sinks:
     labels:
       job: "vector"
     healthcheck: false
+

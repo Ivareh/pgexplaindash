@@ -1,15 +1,6 @@
-container_name = .container_name
-
 # Check if the message is valid JSON before attempting to parse
-if starts_with!(.message, "{") {
-. = parse_json!(.message)
-} else {
-abort
-}
 
-.container_name = container_name
+.message = string!(.message) + "}" # Message doesn't have final curly to be valid json
+.message = parse_json!(.message)
 
-if .logger == "explain_analyze" {
-message_keys = parse_key_value!(.message)
-}
 

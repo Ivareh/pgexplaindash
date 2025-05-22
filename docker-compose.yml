@@ -1,5 +1,6 @@
 services:
   db-optimize-logger:
+    container_name: dol
     image: dol
     env_file:
       - .env
@@ -10,12 +11,13 @@ services:
     networks:
       - ${NETWORK?Variable not set}
     volumes:
+      - ./responses_output:/app/responses_output
       - ./db-optimize-logger/:/app
 
 
   vector:
     container_name: dol-vector
-    image: timberio/vector:0.41.1-debian
+    image: timberio/vector:0.46.1-debian
     restart: "no"
     ports:
       - "8686:8686"
@@ -24,9 +26,11 @@ services:
     networks:
       - ${NETWORK?Variable not set}
     volumes:
+      - ./responses_output:/var/log/responses_output
       - ./vector/vector.yaml:/etc/vector/vector.yaml:ro
       - ./vector/transformers:/etc/vector/transformers:ro
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /run/user/1000/docker.sock:/var/run/docker.sock
+
 
   loki:
     container_name: dol-loki
@@ -42,6 +46,7 @@ services:
       - ./loki.yaml:/etc/loki/local-config.yaml
       - loki-data:/var/lib/loki
     command: -config.file=/etc/loki/local-config.yaml
+
 
   grafana:
     container_name: dol-grafana
@@ -74,6 +79,7 @@ volumes:
     name: "dol-grafana-data"
   loki-data:
     name: "dol-loki-data"
+  response_outputs:
 
 networks:
   traefik-public:

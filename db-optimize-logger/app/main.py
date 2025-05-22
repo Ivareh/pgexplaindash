@@ -6,9 +6,9 @@ if __name__ == "__main__":
     setup_logging()
 
     execute_sql_stmt(
-        text(
+        statement=text(
             """
-        EXPLAIN ANALYZE SELECT item."itemId", item."createdHoursSinceLaunch", item."itemBaseTypeId",
+            EXPLAIN (ANALYZE, FORMAT JSON) SELECT item."itemId", item."createdHoursSinceLaunch", item."itemBaseTypeId",
             item."currencyId", item."currencyAmount", currency."tradeName", currency."valueInChaos",
             currency."createdHoursSinceLaunch" AS "currencyCreatedHoursSinceLaunch"
 
@@ -30,4 +30,5 @@ if __name__ == "__main__":
         tables="item&item_modifier&currency",
         mods="Watcher's eye with increased maximum life",
         time="1week",
+        query_id="default_query",
     )
