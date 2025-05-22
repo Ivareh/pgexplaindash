@@ -1,0 +1,17 @@
+services:
+  db-optimize-logger:
+    build:
+      context: ./db-optimize-logger
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-true}
+    develop:
+      watch:
+        - path: ./db-optimize-logger
+          action: sync
+          target: /app
+          ignore:
+            - ./db-optimize-logger/.venv
+            - .venv
+        - path: ./db-optimize-logger/pyproject.toml
+          action: rebuild
+
