@@ -22,12 +22,14 @@ sources:
       condition_pattern: "^$"
       start_pattern: "^\\{"
       timeout_ms: 100
+    rotate_wait_secs: 5
 
 
 transforms:
   transform-db-optimize-logs:
     type: remap
     inputs:
+      - db-optimize-logger
       - response-outputs
     drop_on_abort: false
     file: /etc/vector/transformers/db-optimize-events.vrl

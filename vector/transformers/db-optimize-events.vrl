@@ -1,6 +1,33 @@
-# Check if the message is valid JSON before attempting to parse
 
-.message = string!(.message) + "}" # Message doesn't have final curly to be valid json
-.message = parse_json!(.message)
+# Currently only handles json files
+if .source_type == "file" {
+# Check if the message is valid JSON before attempting to parse
+	if starts_with!(.message, "{") {
+		if ends_with!(.message, "}") {
+			null
+		} else {
+			.message = string!(.message) + "}" # Message doesn't have final curly to be valid json
+		}
+		.message = parse_json!(.message)
+		.source_type = "explain_file_json"
+		del(.host)
+	} else {
+		null
+	}
+} else {
+	if starts_with!(.message, "{") {
+		. = parse_json!(.message)
+	} else {
+		abort
+	}
+}
+
+
+
+if .logger == "explain_analyze_text" {
+	.message = parse_query_string!(.message)
+}
+
+
 
 
