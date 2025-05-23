@@ -19,4 +19,4 @@ def setup_logging():
 
 logger = logging.getLogger("script")
 
-exp_analyze_logger = logging.getLogger("explain_analyze")
+exp_text_logger = logging.getLogger("explain_analyze_text")

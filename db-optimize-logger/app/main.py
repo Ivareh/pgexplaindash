@@ -1,11 +1,29 @@
-from db import execute_sql_stmt
-from logs.logger import setup_logging
+from pathlib import Path
+
+from db import (
+    convert_json_analyze_to_text,
+    execute_exp_analyze_stmt,
+    load_sql_script,
+    save_json_response,
+)
+from logs.logger import exp_text_logger, setup_logging
 from sqlalchemy import text
+
+
+def log_explain(query_id: str, explain_text: str) -> None:
+    explain_text = "\n" + explain_text
+    exp_text_logger.info(f"query_id={query_id}&explain_text={explain_text}")
+
 
 if __name__ == "__main__":
     setup_logging()
 
-    execute_sql_stmt(
+    sql_script = Path("/app/app/scripts/json_explain_to_text_explain.sql")
+    load_sql_script(sql_script)
+
+    query_id = "default_query"
+
+    response_dump = execute_exp_analyze_stmt(
         statement=text(
             """
             EXPLAIN (ANALYZE, FORMAT JSON) SELECT item."itemId", item."createdHoursSinceLaunch", item."itemBaseTypeId",
@@ -30,5 +48,20 @@ if __name__ == "__main__":
         tables="item&item_modifier&currency",
         mods="Watcher's eye with increased maximum life",
         time="1week",
-        query_id="default_query",
+        query_id=query_id,
     )
+
+    output_dir = Path("/app/responses_output")
+    filename = f"{query_id}_response.json"
+    save_json_response(response_dump, filename=filename, output_dir=output_dir)
+
+    exp_str = convert_json_analyze_to_text(
+        response_dump, do_analyze=True, do_verbose=False
+    )
+    log_explain(query_id=query_id, explain_text=exp_str)
+
+    # print(f"""EXPLAIN ANALYZE TEXT:
+
+    # {exp_str}
+
+    # """)

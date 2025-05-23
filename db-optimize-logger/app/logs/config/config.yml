@@ -41,7 +41,7 @@ loggers:
       - file
       - stdout
     propagate: no
-  explain_analyze:
+  explain_analyze_text:
     level: DEBUG
     handlers:
       - exp_anal_file
