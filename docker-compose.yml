@@ -79,7 +79,7 @@ volumes:
     name: "dol-grafana-data"
   loki-data:
     name: "dol-loki-data"
-  response_outputs:
+  responses_output:
 
 networks:
   traefik-public:
