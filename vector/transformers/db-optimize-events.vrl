@@ -10,7 +10,6 @@ if .source_type == "file" {
 		}
 		.message = parse_json!(.message)
 		.source_type = "explain_file_json"
-		del(.host)
 	} else {
 		null
 	}

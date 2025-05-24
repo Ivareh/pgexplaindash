@@ -14,15 +14,15 @@ sources:
       - /var/log/responses_output/*.json
     read_from: beginning
     fingerprint:
-      ignored_header_bytes: 0
       strategy: checksum
-    ignore_checkpoints: false
+      lines: 10
+    ignore_checkpoints: true
     multiline:
       mode: halt_with
       condition_pattern: "^$"
       start_pattern: "^\\{"
       timeout_ms: 100
-    rotate_wait_secs: 5
+    remove_after_secs: 3
 
 
 transforms:
@@ -55,5 +55,6 @@ sinks:
       codec: json
     labels:
       job: "vector"
+      file: "{{ file }}"
     healthcheck: false
 
