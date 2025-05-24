@@ -50,7 +50,7 @@ services:
 
   grafana:
     extends:
-      file: ./explain-dashboard-app/.config/docker-compose-base.yaml
+      file: ./ivarehaugland-explaindbdashboard-app/.config/docker-compose-base.yaml
       service: grafana
     networks:
       - ${NETWORK?Variable not set}

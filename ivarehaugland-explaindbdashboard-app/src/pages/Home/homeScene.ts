@@ -1,5 +1,5 @@
 import {
-  CustomVariable,
+  QueryVariable,
   EmbeddedScene,
   PanelBuilders,
   SceneControlsSpacer,
@@ -21,12 +21,18 @@ export function homeScene(templatised = true, seriesToShow = '__server_names') {
     to: 'now',
   });
 
-  // Variable definition, using Grafana built-in TestData datasource
-  const customVariable = new CustomVariable({
-    name: 'seriesToShow',
-    label: 'Series to show',
-    value: '__server_names',
-    query: 'Server Names : __server_names, House locations : __house_locations',
+  const queryIdVariable = new QueryVariable({
+    datasource: DATASOURCE_REF,
+    name: 'queryIdToShow',
+    label: 'query_id',
+    value: 'file',
+    regex: `^(?:\/var\/log\/responses_output\/)(.*)(?:\.json)`,
+    query: {
+      refId: 'A',
+      queryType: 'label_values',
+      label: 'file',
+      expr: '', // empty means "all log streams"
+    },
   });
 
   // Query runner definition, using Grafana built-in TestData datasource
@@ -73,7 +79,9 @@ export function homeScene(templatised = true, seriesToShow = '__server_names') {
 
   return new EmbeddedScene({
     $timeRange: timeRange,
-    $variables: new SceneVariableSet({ variables: templatised ? [customVariable] : [] }),
+    $variables: new SceneVariableSet({
+      variables: templatised ? [queryIdVariable] : [],
+    }),
     $data: queryRunner,
     body: new SceneFlexLayout({
       children: [

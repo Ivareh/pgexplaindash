@@ -1,11 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
   "type": "app",
-  "name": "Explain-Dashboard",
-  "id": "ivarehaugland-explaindashboard-app",
+  "name": "Explain-Db-Dashboard",
+  "id": "ivarehaugland-explaindbdashboard-app",
   "info": {
     "keywords": ["app"],
-    "description": "",
+    "description": "Analyze PostgreSQL's explain analyze queries in depth with dashboards",
     "author": {
       "name": "Ivar e haugland"
     },
@@ -27,22 +27,8 @@
     },
     {
       "type": "page",
-      "name": "Page with tabs",
-      "path": "/a/%PLUGIN_ID%/page-with-tabs",
-      "addToNav": true,
-      "defaultNav": false
-    },
-    {
-      "type": "page",
-      "name": "Page with drilldown",
-      "path": "/a/%PLUGIN_ID%/page-with-drilldown",
-      "addToNav": true,
-      "defaultNav": false
-    },
-    {
-      "type": "page",
-      "name": "Hello world",
-      "path": "/a/%PLUGIN_ID%/hello-world",
+      "name": "Explain",
+      "path": "/a/%PLUGIN_ID%/explain",
       "addToNav": true,
       "defaultNav": false
     }

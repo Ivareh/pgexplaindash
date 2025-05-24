@@ -4,7 +4,7 @@ import { prefixRoute } from '../../utils/utils.routing';
 import { ROUTES } from '../../constants';
 
 export const homePage = new SceneAppPage({
-  title: 'Home page',
+  title: 'Explain queries main page',
   url: prefixRoute(ROUTES.Home),
   routePath: ROUTES.Home,
   subTitle:
