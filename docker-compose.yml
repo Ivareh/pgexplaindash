@@ -49,29 +49,11 @@ services:
 
 
   grafana:
-    container_name: dol-grafana
-    image: grafana/grafana:latest
-    restart: "no" # or use `on-failure` if you prefer automatic restarts on crashes
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env
+    extends:
+      file: ./explain-dashboard-app/.config/docker-compose-base.yaml
+      service: grafana
     networks:
       - ${NETWORK?Variable not set}
-    environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME?Grafana username not set}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD?Grafan password not set}
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-      - GF_AUTH_ANONYMOUS_ENABLED=false
-      - GF_AUTH_BASIC_ENABLED=false
-      - GF_FEATURE_TOGGLES_ENABLE=accessControlOnCall
-      - GF_INSTALL_PLUGINS=https://storage.googleapis.com/integration-artifacts/grafana-lokiexplore-app/grafana-lokiexplore-app-latest.zip;grafana-lokiexplore-app
-    volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning # single volume for provisioning
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
-    entrypoint: >
-      sh -c "mkdir -p /etc/grafana/provisioning/datasources /etc/grafana/provisioning/dashboards /etc/grafana/provisioning/plugins /etc/grafana/provisioning/alerting &&
-      /run.sh"  # ensure directories exist
 
 
 volumes:
