@@ -69,7 +69,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -100,7 +101,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0+security-01",
+      "pluginVersion": "11.5.3",
       "targets": [
         {
           "direction": "backward",
@@ -140,7 +141,7 @@
         "sortOrder": "Descending",
         "wrapLogMessage": false
       },
-      "pluginVersion": "12.0.0+security-01",
+      "pluginVersion": "11.5.3",
       "targets": [
         {
           "direction": "backward",
@@ -182,7 +183,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -217,7 +219,7 @@
           }
         ]
       },
-      "pluginVersion": "12.0.0+security-01",
+      "pluginVersion": "11.5.3",
       "targets": [
         {
           "datasource": {
@@ -316,7 +318,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -357,7 +360,7 @@
         "sizing": "auto",
         "valueMode": "color"
       },
-      "pluginVersion": "12.0.0+security-01",
+      "pluginVersion": "11.5.3",
       "targets": [
         {
           "datasource": {
@@ -373,19 +376,6 @@
       ],
       "title": "Line-Time metrics",
       "transformations": [
-        {
-          "disabled": true,
-          "id": "convertFieldType",
-          "options": {
-            "conversions": [
-              {
-                "destinationType": "other",
-                "targetField": "Line"
-              }
-            ],
-            "fields": {}
-          }
-        },
         {
           "id": "extractFields",
           "options": {
@@ -406,19 +396,6 @@
           }
         },
         {
-          "disabled": true,
-          "id": "convertFieldType",
-          "options": {
-            "conversions": [
-              {
-                "destinationType": "other",
-                "targetField": "message"
-              }
-            ],
-            "fields": {}
-          }
-        },
-        {
           "id": "filterFieldsByName",
           "options": {
             "byVariable": false,
@@ -426,24 +403,120 @@
               "pattern": ".*(Total Time|Execution Time)"
             }
           }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "fields": {},
-            "sort": [
-              {
-                "field": "file"
-              }
-            ]
-          }
         }
       ],
       "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "PB99A0DFC953F515F"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 23,
+        "w": 24,
+        "x": 0,
+        "y": 55
+      },
+      "id": 5,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.5.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "PB99A0DFC953F515F"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{job=\"vector\"} |= `explain_file_json`",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Total execution times",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "format": "json",
+            "jsonPaths": [],
+            "keepTime": false,
+            "replace": false,
+            "source": "Line"
+          }
+        },
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "format": "json",
+            "source": "message"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "byVariable": false,
+            "include": {
+              "pattern": ".*(Execution Time|file)"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {}
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "pattern": "Total|file"
+            }
+          }
+        }
+      ],
+      "type": "gauge"
     }
   ],
   "preload": false,
-  "schemaVersion": 41,
+  "schemaVersion": 40,
   "tags": [],
   "templating": {
     "list": [
@@ -453,6 +526,8 @@
           "value": "2 week Watcher Eye Increased Max Life_response"
         },
         "definition": "",
+        "includeAll": false,
+        "multi": true,
         "name": "query_id",
         "options": [],
         "query": {
@@ -475,5 +550,6 @@
   "timezone": "browser",
   "title": "Explain Analyze Logs",
   "uid": "d09b90a5-7749-42b0-b7e1-21274614203f",
-  "version": 13
+  "version": 4,
+  "weekStart": ""
 }
