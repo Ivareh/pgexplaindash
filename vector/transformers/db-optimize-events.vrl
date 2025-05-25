@@ -8,6 +8,7 @@ if .source_type == "file" {
 		} else {
 			.message = string!(.message) + "}" # Message doesn't have final curly to be valid json
 		}
+		.file = replace!(.file, "/var/log/responses_output/", "")
 		.message = parse_json!(.message)
 		.source_type = "explain_file_json"
 	} else {
