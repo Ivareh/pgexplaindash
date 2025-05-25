@@ -11,11 +11,13 @@ import {
   SceneTimeRange,
   SceneVariableSet,
   VariableValueSelectors,
+  SceneDataTransformer,
+  VizPanel,
+  behaviors,
 } from '@grafana/scenes';
 import { DATASOURCE_REF } from '../../constants';
-import { CustomSceneObject } from './CustomSceneObject';
 
-export function homeScene(templatised = true, seriesToShow = '__server_names') {
+export function homeScene() {
   const timeRange = new SceneTimeRange({
     from: 'now-6h',
     to: 'now',
@@ -23,15 +25,14 @@ export function homeScene(templatised = true, seriesToShow = '__server_names') {
 
   const queryIdVariable = new QueryVariable({
     datasource: DATASOURCE_REF,
-    name: 'queryIdToShow',
+    name: 'query_id',
     label: 'query_id',
     value: 'file',
-    regex: `^(?:\/var\/log\/responses_output\/)(.*)(?:\.json)`,
+    isMulti: true,
+    regex: `(.*)(?:\.json)`,
     query: {
-      refId: 'A',
-      queryType: 'label_values',
+      refId: 'LokiVariableQueryEditor-VariableQuery',
       label: 'file',
-      expr: '', // empty means "all log streams"
     },
   });
 
@@ -40,64 +41,246 @@ export function homeScene(templatised = true, seriesToShow = '__server_names') {
     datasource: DATASOURCE_REF,
     queries: [
       {
-        refId: 'A',
         datasource: DATASOURCE_REF,
-        scenarioId: 'random_walk',
-        seriesCount: 5,
-        // Query is using variable value
-        alias: templatised ? '${seriesToShow}' : seriesToShow,
-        min: 30,
-        max: 60,
+        direction: 'backward',
+        editorMode: 'builder',
+        queryType: 'range',
+        refId: 'A',
       },
     ],
-    maxDataPoints: 100,
   });
 
-  // Custom object definition
-  const customObject = new CustomSceneObject({
-    counter: 5,
+  const explainTextRunner = new SceneQueryRunner({
+    datasource: DATASOURCE_REF,
+    queries: [
+      {
+        ...queryRunner.state.queries[0],
+        expr: `{job="vector"} |= \`"logger":"explain_analyze_text"\` | json | line_format \` {{ .message_query_id }} {{ .message_explain_text }}\``,
+      },
+    ],
   });
 
-  // Query runner activation handler that will update query runner state when custom object state changes
-  queryRunner.addActivationHandler(() => {
-    const sub = customObject.subscribeToState((newState) => {
-      queryRunner.setState({
-        queries: [
-          {
-            ...queryRunner.state.queries[0],
-            seriesCount: newState.counter,
+  const lineTimeRunner = new SceneQueryRunner({
+    datasource: DATASOURCE_REF,
+    queries: [
+      {
+        ...queryRunner.state.queries[0],
+        expr: `{job="vector"} |= \`explain_file_json\` |= \`$query_id\``,
+      },
+    ],
+  });
+
+  const lineTimeData = new SceneDataTransformer({
+    $data: lineTimeRunner,
+    transformations: [
+      {
+        id: 'extractFields',
+        options: {
+          delimiter: ',',
+          format: 'json',
+          jsonPaths: [],
+          keepTime: false,
+          replace: false,
+          source: 'Line',
+        },
+      },
+      {
+        id: 'extractFields',
+        options: {
+          delimiter: ',',
+          format: 'json',
+          source: 'message',
+        },
+      },
+      {
+        id: 'filterFieldsByName',
+        options: {
+          byVariable: false,
+          include: {
+            pattern: '.*(Total Time|Execution Time)',
           },
-        ],
-      });
-      queryRunner.runQueries();
-    });
+        },
+      },
+    ],
+  });
 
-    return () => {
-      sub.unsubscribe();
-    };
+  const lineTimePanel = new SceneFlexItem({
+    $behaviors: [
+      new behaviors.ActWhenVariableChanged({
+        variableName: 'query_id',
+        onChange: (variable) => {
+          // Set value hidden of the component using this behavior if variable is a list
+          const newValue = (variable as any).getValue?.() ?? variable.state;
+
+          // 4) Determine if it’s a “list” (i.e. an array of values)
+          const isOne = Array.isArray(newValue) && newValue.length !== 1;
+
+          // 5) Toggle the hidden flag on the flex item
+          lineTimePanel.setState({ isHidden: isOne });
+        },
+      }),
+    ],
+    minWidth: 300,
+    minHeight: 800,
+    body: new VizPanel({
+      $data: lineTimeData,
+      pluginId: 'bargauge',
+      title: 'Line time metrics',
+      fieldConfig: {
+        defaults: {
+          mappings: [],
+          color: {
+            mode: 'continuous-GrYlRd',
+          },
+          unit: 'ms',
+        },
+        overrides: [],
+      },
+      options: {
+        displayMode: 'lcd',
+        legend: {
+          calcs: [],
+          displayMode: 'list',
+          placement: 'bottom',
+          showLegend: false,
+        },
+        maxVizHeight: 300,
+        minVizHeight: 16,
+        minVizWidth: 8,
+        namePlacement: 'top',
+        orientation: 'horizontal',
+        reduceOptions: {
+          calcs: [],
+          values: true,
+        },
+        showUnfilled: true,
+        sizing: 'auto',
+        valueMode: 'color',
+      },
+    }),
+  });
+
+  const totalExecutionRunner = new SceneQueryRunner({
+    datasource: DATASOURCE_REF,
+    queries: [
+      {
+        ...queryRunner.state.queries[0],
+        expr: `{job="vector"} |= \`explain_file_json\``,
+      },
+    ],
+  });
+
+  const totalExecutionData = new SceneDataTransformer({
+    $data: totalExecutionRunner,
+    transformations: [
+      {
+        id: 'extractFields',
+        options: {
+          delimiter: ',',
+          format: 'json',
+          jsonPaths: [],
+          keepTime: false,
+          replace: false,
+          source: 'Line',
+        },
+      },
+      {
+        id: 'extractFields',
+        options: {
+          delimiter: ',',
+          format: 'json',
+          source: 'message',
+        },
+      },
+      {
+        id: 'filterFieldsByName',
+        options: {
+          byVariable: false,
+          include: {
+            pattern: '.*(Execution Time|file)',
+          },
+        },
+      },
+      {
+        id: 'calculateField',
+        options: {},
+      },
+      {
+        id: 'filterFieldsByName',
+        options: {
+          include: {
+            pattern: 'Total|file',
+          },
+        },
+      },
+    ],
   });
 
   return new EmbeddedScene({
     $timeRange: timeRange,
     $variables: new SceneVariableSet({
-      variables: templatised ? [queryIdVariable] : [],
+      variables: [queryIdVariable],
     }),
-    $data: queryRunner,
     body: new SceneFlexLayout({
+      wrap: 'wrap',
+      direction: 'row',
       children: [
         new SceneFlexItem({
-          minHeight: 300,
-          body: PanelBuilders.timeseries()
+          width: 1400,
+          minWidth: 400,
+          minHeight: 800,
+          body: PanelBuilders.logs()
             // Title is using variable value
-            .setTitle(templatised ? '${seriesToShow}' : seriesToShow)
+            .setTitle('Explain analyze text logs')
+            .setData(explainTextRunner)
             .build(),
+        }),
+        lineTimePanel,
+        new SceneFlexItem({
+          minWidth: 300,
+          minHeight: 600,
+          body: new VizPanel({
+            $data: totalExecutionData,
+            pluginId: 'gauge',
+            title: 'Total execution times',
+            fieldConfig: {
+              defaults: {
+                mappings: [],
+                color: {
+                  mode: 'continuous-GrYlRd',
+                },
+                unit: 'ms',
+              },
+              overrides: [],
+            },
+            options: {
+              displayMode: 'lcd',
+              legend: {
+                calcs: [],
+                displayMode: 'list',
+                placement: 'bottom',
+                showLegend: false,
+              },
+              maxVizHeight: 300,
+              minVizHeight: 16,
+              minVizWidth: 8,
+              namePlacement: 'top',
+              orientation: 'horizontal',
+              reduceOptions: {
+                calcs: [],
+                values: true,
+              },
+              showUnfilled: true,
+              sizing: 'auto',
+              valueMode: 'color',
+            },
+          }),
         }),
       ],
     }),
     controls: [
       new VariableValueSelectors({}),
       new SceneControlsSpacer(),
-      customObject,
       new SceneTimePicker({ isOnCanvas: true }),
       new SceneRefreshPicker({
         intervals: ['5s', '1m', '1h'],
