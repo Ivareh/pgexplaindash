@@ -37,28 +37,24 @@ def execute_exp_analyze_stmt(
     return response_dump
 
 
-def save_json_response(
-    response_dump: dict[Any, Any], filename: str, output_dir: Path
-) -> str:
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    file_path = output_dir / filename
-    logger.info(f"Saving response object to '{file_path}'")
-
+def add_line_id(response_dump: dict[Any, Any]) -> dict[Any, Any]:
     current_id = [0]  # Start with id 1
 
-    def process_item(key: str, value: Any, layer_id: int) -> tuple[str, Any]:
+    def process_item(key: str, value: Any, layer_id: int) -> tuple[str, Any, str]:
         nonlocal current_id
         unique_id = current_id[0]
-        new_key = f"{unique_id}:{layer_id}:{key}"
+        prefix_id = f"{unique_id}:{layer_id}"
+        new_key = f"{prefix_id}:{key}"
 
         if isinstance(value, dict):
             current_id[0] += 1
             new_dict = {}
             for k, v in value.items():
-                processed_k, processed_v = process_item(k, v, layer_id + 1)
+                processed_k, processed_v, prefix_id = process_item(k, v, layer_id + 1)
                 new_dict[processed_k] = processed_v
-            return (new_key, new_dict)
+                if "0:0" in prefix_id:
+                    new_dict[f"{prefix_id}:Parent_Node"] = new_key
+            return (new_key, new_dict, prefix_id)
 
         elif isinstance(value, list):
             new_list = []
@@ -67,28 +63,41 @@ def save_json_response(
                     current_id[0] += 1
                     list_item = {}
                     for k, v in item.items():
-                        processed_k, processed_v = process_item(k, v, layer_id + 1)
+                        processed_k, processed_v, prefix_id = process_item(
+                            k, v, layer_id + 1
+                        )
                         list_item[processed_k] = processed_v
+                        list_item[f"{prefix_id}:Parent Node"] = new_key
                     new_list.append(list_item)
                 else:
                     new_list.append(item)
-            return (new_key, new_list)
+            return (new_key, new_list, prefix_id)
 
         else:
-            return (new_key, value)
+            return (new_key, value, prefix_id)
 
     transformed = {}
     for k, v in response_dump.items():
-        new_key, new_value = process_item(k, v, 1)
+        _, new_value, _ = process_item(k, v, 0)
 
-        transformed[new_key] = new_value
+        transformed[f"{k}"] = new_value
 
-    transformed = flatten_with_paths(transformed)
+    return transformed
+
+
+def save_json_response(
+    response_dump: dict[Any, Any], filename: str, output_dir: Path
+) -> str:
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    file_path = output_dir / filename
+    logger.info(f"Saving response object to '{file_path}'")
 
     # print("\n\n\n\n RESP_DUMP_TO_SAVE: ", transformed, "\n\n\n\n")
 
     with open(file_path, "w") as f:
-        json.dump(transformed, f, indent=2)
+        # json.dump(transformed, f, indent=2)
+        json.dump(response_dump, f, indent=2)
 
     return str(file_path)
 

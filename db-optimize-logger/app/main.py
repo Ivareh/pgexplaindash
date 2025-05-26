@@ -1,12 +1,15 @@
 from pathlib import Path
 
 from db import (
+    add_line_id,
     convert_json_analyze_to_text,
     execute_exp_analyze_stmt,
+    flatten_with_paths,
     load_sql_script,
     save_json_response,
 )
 from logs.logger import exp_text_logger, setup_logging
+from node_graph_plan import process_node_graph
 from sqlalchemy import text
 
 
@@ -21,44 +24,80 @@ if __name__ == "__main__":
     sql_script = Path("/app/app/scripts/json_explain_to_text_explain.sql")
     load_sql_script(sql_script)
 
-    query_id = "default_query"
+    queries = [
+        {
+            "query_id": "1 week Watcher Eye Increased Max Life",
+            "statement": text(
+                """
+                    EXPLAIN (ANALYZE, FORMAT JSON) SELECT item."itemId", item."createdHoursSinceLaunch", item."itemBaseTypeId",
+                    item."currencyId", item."currencyAmount", currency."tradeName", currency."valueInChaos",
+                    currency."createdHoursSinceLaunch" AS "currencyCreatedHoursSinceLaunch"
 
-    response_dump = execute_exp_analyze_stmt(
-        statement=text(
-            """
-            EXPLAIN (ANALYZE, FORMAT JSON) SELECT item."itemId", item."createdHoursSinceLaunch", item."itemBaseTypeId",
-            item."currencyId", item."currencyAmount", currency."tradeName", currency."valueInChaos",
-            currency."createdHoursSinceLaunch" AS "currencyCreatedHoursSinceLaunch"
+                    FROM item JOIN currency ON currency."currencyId" = item."currencyId"
+                    WHERE item.league = 'Phrecia' AND item."createdHoursSinceLaunch" >= 0 AND item."createdHoursSinceLaunch" <= 312
 
-            FROM item JOIN currency ON currency."currencyId" = item."currencyId"
-            WHERE item.league = 'Phrecia' AND item."createdHoursSinceLaunch" >= 0 AND item."createdHoursSinceLaunch" <= 312
+                    AND
 
-            AND
+                    (EXISTS (SELECT 1 FROM item_modifier
 
-            (EXISTS (SELECT 1 FROM item_modifier
+                    WHERE item."itemId" = item_modifier."itemId" AND item_modifier."modifierId" = 85
 
-            WHERE item."itemId" = item_modifier."itemId" AND item_modifier."modifierId" = 85
+                    AND item_modifier."createdHoursSinceLaunch" >= 0 AND item_modifier."createdHoursSinceLaunch" <= 312
+                    ))
 
-            AND item_modifier."createdHoursSinceLaunch" >= 0 AND item_modifier."createdHoursSinceLaunch" <= 312
-            ))
+                    AND item.name = 'Watcher''s Eye' AND item."itemBaseTypeId"= 29;
+                """
+            ),
+        },
+        {
+            "query_id": "2 week Watcher Eye Increased Max Life",
+            "statement": text(
+                """
+                    EXPLAIN (ANALYZE, FORMAT JSON) SELECT item."itemId", item."createdHoursSinceLaunch", item."itemBaseTypeId",
+                    item."currencyId", item."currencyAmount", currency."tradeName", currency."valueInChaos",
+                    currency."createdHoursSinceLaunch" AS "currencyCreatedHoursSinceLaunch"
 
-            AND item.name = 'Watcher''s Eye' AND item."itemBaseTypeId"= 29;
-        """
-        ),
-        tables="item&item_modifier&currency",
-        mods="Watcher's eye with increased maximum life",
-        time="1week",
-        query_id=query_id,
-    )
+                    FROM item JOIN currency ON currency."currencyId" = item."currencyId"
+                    WHERE item.league = 'Phrecia' AND item."createdHoursSinceLaunch" >= 0 AND item."createdHoursSinceLaunch" <= 624
 
-    output_dir = Path("/app/responses_output")
-    filename = f"{query_id}_response.json"
-    save_json_response(response_dump, filename=filename, output_dir=output_dir)
+                    AND
 
-    exp_str = convert_json_analyze_to_text(
-        response_dump, do_analyze=True, do_verbose=False
-    )
-    log_explain(query_id=query_id, explain_text=exp_str)
+                    (EXISTS (SELECT 1 FROM item_modifier
+
+                    WHERE item."itemId" = item_modifier."itemId" AND item_modifier."modifierId" = 85
+
+                    AND item_modifier."createdHoursSinceLaunch" >= 0 AND item_modifier."createdHoursSinceLaunch" <= 624
+                    ))
+
+                    AND item.name = 'Watcher''s Eye' AND item."itemBaseTypeId"= 29;
+                """
+            ),
+        },
+    ]
+
+    for query in queries:
+        statement = query["statement"]
+        query_id = query["query_id"]
+        response_dump = execute_exp_analyze_stmt(
+            statement=statement,
+            query_id=query_id,
+        )
+
+        output_dir = Path("/app/responses_output")
+        filename = f"{query_id}_response.json"
+
+        exp_str = convert_json_analyze_to_text(
+            response_dump, do_analyze=True, do_verbose=False
+        )
+
+        response_dump = add_line_id(response_dump)
+
+        response_dump = flatten_with_paths(response_dump)
+        process_node_graph(response_dump)
+
+        save_json_response(response_dump, filename=filename, output_dir=output_dir)
+
+        log_explain(query_id=query_id, explain_text=exp_str)
 
     # print(f"""EXPLAIN ANALYZE TEXT:
 

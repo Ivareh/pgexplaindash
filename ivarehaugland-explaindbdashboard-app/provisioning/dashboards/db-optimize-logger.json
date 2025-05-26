@@ -318,8 +318,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -422,8 +421,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -537,7 +535,7 @@
           "type": 1
         },
         "refresh": 1,
-        "regex": "^(?:\\/var\\/log\\/responses_output\\/)(.*)(?:\\.json)",
+        "regex": "(.*)(?:\\.json)",
         "type": "query"
       }
     ]
@@ -550,6 +548,6 @@
   "timezone": "browser",
   "title": "Explain Analyze Logs",
   "uid": "d09b90a5-7749-42b0-b7e1-21274614203f",
-  "version": 4,
+  "version": 1,
   "weekStart": ""
 }
