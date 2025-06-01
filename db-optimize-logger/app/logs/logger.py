@@ -17,6 +17,5 @@ def setup_logging():
     logging.config.dictConfig(config)
 
 
-logger = logging.getLogger("script")
-
-exp_text_logger = logging.getLogger("explain_analyze_text")
+explain_logger = logging.getLogger("explain_logger")
+graph_node_logger = logging.getLogger("graph_node_logger")

@@ -3,6 +3,16 @@ from enum import StrEnum
 # Check out for Node Types: https://github.com/postgres/postgres/blob/master/src/backend/commands/explain.c#L137
 
 
+class PlanProp(StrEnum):
+    EXECUTION_TIME = "Execution Time"
+    PLANNING_TIME = "Planning Time"
+    TRIGGERS = "Triggers"
+    PLAN = "Plan"
+
+    # computed by dol
+    NODES = "nodes"
+
+
 class NodeProp(StrEnum):
     # plan property keys
     NODE_TYPE = "Node Type"
@@ -45,6 +55,7 @@ class NodeProp(StrEnum):
     LOCAL_DIRTIED_BLOCKS = "Local Dirtied Blocks"
     LOCAL_WRITTEN_BLOCKS = "Local Written Blocks"
     IO_READ_TIME = "I/O Read Time"
+
     IO_WRITE_TIME = "I/O Write Time"
     OUTPUT = "Output"
     HEAP_FETCHES = "Heap Fetches"
@@ -60,9 +71,12 @@ class NodeProp(StrEnum):
     OPERATION = "Operation"
 
     # computed by dol
+    INDEX = "index"  # line index of node in plan
     NODE_ID = "node_id"
     PARENT_NODE = "parent_node"
     TIMING = "timing"  # total actual time subtracted by startup time
+    IS_LAST_CHILD = "is_last_child"
+    BRANCHES = "branches"  # number of branches of the node
 
 
 class NodeType(StrEnum):
@@ -403,7 +417,6 @@ class GrafanaNodeProp(StrEnum):
     TITLE = "title"
     MAINSTAT = "mainstat"  # property: timing (total - startup time)
     SECONDARYSTAT = "secondarystat"  # property: rows
-    SOURCE = "source"  # for edge dataset
     DETAIL__ = "detail__"  # add desired prop suffix
     # Todo: add "highlighted" for important paths
 

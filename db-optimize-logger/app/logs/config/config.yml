@@ -35,14 +35,14 @@ handlers:
     maxBytes: 504857600 # 500 mb
     backupCount: 2
 loggers:
-  script:
+  explain_logger:
     level: DEBUG
     handlers:
-      - file
+      - exp_anal_file
       - stdout
     propagate: no
-  explain_analyze_text:
-    level: DEBUG
+  graph_node_logger:
+    level: INFO
     handlers:
       - exp_anal_file
       - stdout
