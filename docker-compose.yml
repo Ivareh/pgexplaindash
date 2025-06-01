@@ -11,7 +11,8 @@ services:
     networks:
       - ${NETWORK?Variable not set}
     volumes:
-      - ./responses_output:/app/responses_output
+      - ./file/explain_output:/app/file/explain_output
+      - ./file/graphs_output:/app/file/graphs_output
       - ./db-optimize-logger/:/app
 
 
@@ -26,7 +27,7 @@ services:
     networks:
       - ${NETWORK?Variable not set}
     volumes:
-      - ./responses_output:/var/log/responses_output
+      - ./file:/var/log/
       - ./vector/vector.yaml:/etc/vector/vector.yaml:ro
       - ./vector/transformers:/etc/vector/transformers:ro
       - /run/user/1000/docker.sock:/var/run/docker.sock
@@ -61,7 +62,6 @@ volumes:
     name: "dol-grafana-data"
   loki-data:
     name: "dol-loki-data"
-  responses_output:
 
 networks:
   traefik-public:

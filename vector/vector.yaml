@@ -8,19 +8,36 @@ sources:
     include_images:
       - dol
 
-  response-outputs:
+  explain-output:
     type: file
     include:
-      - /var/log/responses_output/*.json
+      - /var/log/explain_output/*.json
     read_from: beginning
     fingerprint:
       strategy: checksum
-      lines: 10
+      lines: 1
+    ignore_checkpoints: true
+    #multiline:
+    #  mode: halt_with
+    #  condition_pattern: "^$"
+    #  start_pattern: "^\\["
+    #  timeout_ms: 100
+    remove_after_secs: 3
+
+
+  graphs-output:
+    type: file
+    include:
+      - /var/log/graphs_output/*.json
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+      lines: 1
     ignore_checkpoints: true
     multiline:
       mode: halt_with
       condition_pattern: "^$"
-      start_pattern: "^\\{"
+      start_pattern: "^\\["
       timeout_ms: 100
     remove_after_secs: 3
 
@@ -30,15 +47,33 @@ transforms:
     type: remap
     inputs:
       - db-optimize-logger
-      - response-outputs
     drop_on_abort: false
     file: /etc/vector/transformers/db-optimize-events.vrl
     timezone: local
+
+  transform-explain-json:
+    type: remap
+    inputs:
+      - explain-output
+    drop_on_abort: false
+    file: /etc/vector/transformers/explain_file_output.vrl
+    timezone: local
+
+  transform-graphs-json:
+    type: remap
+    inputs:
+      - graphs-output
+    drop_on_abort: false
+    file: /etc/vector/transformers/graphs_file_output.vrl
+    timezone: local
+
 
 sinks:
   console:
     inputs:
       - transform-db-optimize-logs
+      - transform-explain-json
+      - transform-graphs-json
     target: stdout
     type: console
     encoding:
@@ -48,6 +83,8 @@ sinks:
     type: loki
     inputs:
       - transform-db-optimize-logs
+      - transform-explain-json
+      - transform-graphs-json
     endpoint: http://loki:3100
     out_of_order_action: accept
     compression: snappy

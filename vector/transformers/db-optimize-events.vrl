@@ -1,33 +1,18 @@
+. = .message
 
-# Currently only handles json files
-if .source_type == "file" {
-# Check if the message is valid JSON before attempting to parse
-	if starts_with!(.message, "{") {
-		if ends_with!(.message, "}") {
-			null
-		} else {
-			.message = string!(.message) + "}" # Message doesn't have final curly to be valid json
-		}
-		.file = replace!(.file, "/var/log/responses_output/", "")
-		.message = parse_json!(.message)
-		.source_type = "explain_file_json"
-	} else {
-		null
-	}
-} else {
-	if starts_with!(.message, "{") {
-		. = parse_json!(.message)
-	} else {
-		abort
+. = parse_json!(.)
+
+if (.logger == "graph_node_logger") {
+    if (contains(string!(.message), "&node")) {
+        .message = parse_regex!(.message, r'query_id=(?P<query_id>[^&]+)&node=(?P<node>.+)')
+    } else if (contains(string!(.message), "&edge")) {
+        .message = parse_regex!(.message, r'query_id=(?P<query_id>[^&]+)&edge=(?P<edge>.+)')
+    }
+} else if (.logger == "explain_analyze_text") {
+	if (contains(string!(.message), "&plan")) {
+        .message = parse_regex!(.message, r'query_id=(?P<query_id>[^&]+)&plan=(?P<plan>.+)')
+		.plan = .message.plan
 	}
 }
-
-
-
-if .logger == "explain_analyze_text" {
-	.message = parse_query_string!(.message)
-}
-
-
 
 
