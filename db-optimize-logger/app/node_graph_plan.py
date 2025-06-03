@@ -1,40 +1,38 @@
+import numpy as np
 import pandas as pd
 
 from app.interface import (
-    NODE_TYPE_INFO,
-    NodeProp,
-    NodeType,
-    PlanProp,
+    GrafanaEdgeEnum as GEE,
 )
 from app.interface import (
-    GrafanaEdgeProp as GEP,
+    GrafanaNodeEnum as GNE,
 )
 from app.interface import (
-    GrafanaNodeProp as GNP,
+    NodeEnum,
 )
 
 
-def _get_node_type_info(node_type: str):
-    node_type = NodeType(node_type)
-
-    return NODE_TYPE_INFO[node_type]
-
-
-def create_graphnode_table(explain_df: pd.DataFrame) -> pd.DataFrame:
-    explain_df = explain_df.explode(PlanProp.NODES)
-    nodes = explain_df[PlanProp.NODES]
-
+def create_graphnode_table(node_series: pd.Series) -> pd.DataFrame:
     graphnode_df = pd.DataFrame(
         {
-            GNP.ID.value: nodes.str[NodeProp.NODE_ID],
-            GNP.TITLE.value: nodes.str[NodeProp.NODE_TYPE],
-            GNP.MAINSTAT.value: nodes.str[NodeProp.TIMING],
-            GNP.SECONDARYSTAT.value: nodes.str[NodeProp.ACTUAL_ROWS],
-            f"{GNP.DETAIL__.value}{NodeProp.ACTUAL_TOTAL_TIME.value}": nodes.str[
-                NodeProp.ACTUAL_TOTAL_TIME
+            GNE.ID.value: node_series.str[NodeEnum.NODE_ID],
+            GNE.TITLE.value: node_series.str[NodeEnum.NODE_TYPE],
+            GNE.MAINSTAT.value: node_series.str[NodeEnum.TIMING],
+            GNE.SECONDARYSTAT.value: node_series.str[NodeEnum.NODE_TYPE_DETAIL],
+            f"{GNE.DETAIL__.value}{NodeEnum.ACTUAL_ROWS.value}": node_series.str[
+                NodeEnum.ACTUAL_ROWS
             ],
-            f"{GNP.DETAIL__.value}{NodeProp.ACTUAL_STARTUP_TIME.value}": nodes.str[
-                NodeProp.ACTUAL_STARTUP_TIME
+            f"{GNE.DETAIL__.value}{NodeEnum.ACTUAL_TOTAL_TIME.value}": node_series.str[
+                NodeEnum.ACTUAL_TOTAL_TIME
+            ],
+            f"{GNE.DETAIL__.value}{NodeEnum.ACTUAL_STARTUP_TIME.value}": node_series.str[
+                NodeEnum.ACTUAL_STARTUP_TIME
+            ],
+            f"{GNE.DETAIL__.value}{NodeEnum.TOTAL_COST.value}": node_series.str[
+                NodeEnum.TOTAL_COST
+            ],
+            f"{GNE.DETAIL__.value}{NodeEnum.DESCRIPTION.value}": node_series.str[
+                NodeEnum.DESCRIPTION
             ],
         }
     )
@@ -42,22 +40,46 @@ def create_graphnode_table(explain_df: pd.DataFrame) -> pd.DataFrame:
     return graphnode_df
 
 
-def create_graphedge_table(explain_df: pd.DataFrame) -> pd.DataFrame:
-    explain_df = explain_df.explode(PlanProp.NODES)
-    nodes = explain_df[PlanProp.NODES]
-
+def create_graphedge_table(node_series: pd.Series) -> pd.DataFrame:
     graphedge_df = pd.DataFrame(
         {
-            GEP.ID.value: (
-                nodes.str.get(NodeProp.NODE_ID).astype(str)
+            GEE.ID.value: (
+                node_series.str.get(NodeEnum.NODE_ID).astype(str)
                 + "_"
-                + nodes.str.get(NodeProp.PARENT_NODE).astype(str)
+                + node_series.str.get(NodeEnum.PARENT_NODE).astype(str)
             ),
-            GEP.SOURCE.value: nodes.str[NodeProp.PARENT_NODE],
-            GEP.TARGET.value: nodes.str[NodeProp.NODE_ID],
+            GEE.SOURCE.value: node_series.str[NodeEnum.PARENT_NODE],
+            GEE.TARGET.value: node_series.str[NodeEnum.NODE_ID],
         }
     )
 
     graphedge_df = graphedge_df.dropna()
 
     return graphedge_df
+
+
+def create_level_divider(node_series: pd.Series) -> pd.DataFrame:
+    indexes = node_series.str[NodeEnum.INDEX].astype(int)
+    is_last_child = node_series.str[NodeEnum.IS_LAST_CHILD].astype(bool)
+    node_types = node_series.str.get(NodeEnum.NODE_TYPE).astype(str)
+
+    base_prefix = np.where(indexes == 0, "", np.where(is_last_child, "└ ", "├ "))
+
+    def build_depth_prefix(depth_val, branches):
+        parts = []
+        for level in range(0, depth_val - 1):
+            if level in branches:
+                parts.append("│   ")
+            else:
+                parts.append("    ")
+        return "".join(parts)
+
+    depth_prefix = node_series.apply(
+        lambda node: build_depth_prefix(node[NodeEnum.DEPTH], node[NodeEnum.BRANCHES])
+    )
+
+    # Combine components
+    full_prefix = depth_prefix + base_prefix
+    level_divider_str = '"' + full_prefix + node_types + '"'
+
+    return pd.concat([node_series, level_divider_str], axis=1).reset_index()
