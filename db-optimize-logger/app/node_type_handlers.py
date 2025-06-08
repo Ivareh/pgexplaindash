@@ -96,15 +96,6 @@ class NodeTypeService:
         handler_class = self._get_node_type_handler_class(node_type_enum)
         return handler_class(node_type_enum)
 
-    def validate_node_type_enum(self):
-        """Validates if the node type enum uses correct handler"""
-        handler_class = self._get_node_type_handler_class(self.node_type_enum)
-        if handler_class is not type(self):
-            raise ValueError(
-                f"Node type enum: {self.node_type_enum} is associated with {handler_class.__name__}, "
-                f"but got {type(self).__name__}"
-            )
-
     def create_node_type_detail(self, node_data: dict[str, Any]) -> str:
         type_detail = self.node_type_handler.node_type_detail(node_data=node_data)
 

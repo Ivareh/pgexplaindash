@@ -1,13 +1,12 @@
 import numpy as np
 import pandas as pd
-
-from app.interface import (
+from interface import (
     GrafanaEdgeEnum as GEE,
 )
-from app.interface import (
+from interface import (
     GrafanaNodeEnum as GNE,
 )
-from app.interface import (
+from interface import (
     NodeEnum,
 )
 
@@ -34,6 +33,8 @@ def create_graphnode_table(node_series: pd.Series) -> pd.DataFrame:
             f"{GNE.DETAIL__.value}{NodeEnum.DESCRIPTION.value}": node_series.str[
                 NodeEnum.DESCRIPTION
             ],
+            GNE.NODERADIUS.value: 50,
+            GNE.COLOR.value: node_series.str[NodeEnum.TIMING_COLOR],
         }
     )
 

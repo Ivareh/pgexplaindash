@@ -13,6 +13,31 @@ from node_type_handlers import (
 )
 
 
+def calc_timing_color(timing_proportion: float) -> str:
+    if timing_proportion >= 0.5:
+        return "#FF0000"
+    elif 0.10 <= timing_proportion < 0.5:
+        return "#FFFF00"
+    else:
+        return "#008000"
+
+
+def add_node_timing(nodes_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    total_timing = 0
+    for node in nodes_list:
+        total_timing += node[NE.TIMING_MS]
+
+    for node in nodes_list:
+        timing_ms = node[NE.TIMING_MS]
+        timing_proportion = round(timing_ms / total_timing, 2)
+        timing_pct = timing_proportion * 100
+        node[NE.TIMING.value] = f"{timing_ms}ms | {timing_pct:.0f}%"
+        node[NE.TIMING_PROPORTION.value] = timing_proportion
+        node[NE.TIMING_COLOR.value] = calc_timing_color(timing_proportion)
+
+    return nodes_list
+
+
 def extract_nodes(plan_dict: dict[str, Any]) -> list[dict[str, Any]]:
     nodes_list = []
     stack: list[tuple[dict, str | None, int, list[int]]] = [
@@ -42,7 +67,9 @@ def extract_nodes(plan_dict: dict[str, Any]) -> list[dict[str, Any]]:
             NE.INDEX.value: index,
             NE.DEPTH.value: node_depth,
             NE.BRANCHES.value: branches[:-1],
-            NE.TIMING.value: timing,
+            NE.TIMING.value: None,
+            NE.TIMING_COLOR.value: None,
+            NE.TIMING_MS.value: timing,
             NE.NODE_TYPE_DETAIL.value: type_detail,
             NE.DESCRIPTION.value: description,
         }
@@ -59,13 +86,7 @@ def extract_nodes(plan_dict: dict[str, Any]) -> list[dict[str, Any]]:
 
         index += 1
 
-    total_timing = 0
-    for node in nodes_list:
-        total_timing += node[NE.TIMING]
-
-    for node in nodes_list:
-        pct = round(node[NE.TIMING] / total_timing, 2) * 100
-        node[NE.TIMING.value] = f'"{node[NE.TIMING]}ms | {pct:.0f}%"'
+    nodes_list = add_node_timing(nodes_list)
 
     return nodes_list
 

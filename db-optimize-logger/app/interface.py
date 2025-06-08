@@ -77,7 +77,12 @@ class NodeEnum(StrEnum):
     INDEX = "index"  # line index of node in plan (not same as INDEX_NAME)
     NODE_ID = "node_id"
     PARENT_NODE = "parent_node"
-    TIMING = "timing"  # total actual time subtracted by startup time
+
+    TIMING = "timing"  # timing string with milliseconds and percent. Calculated with total actual time subtracted by startup time
+    TIMING_MS = "timing_ms"  #  timing in milliseconds
+    TIMING_PROPORTION = "timing_proportion"  # node timing proportion of whole plan
+    TIMING_COLOR = "timing_color"
+
     IS_LAST_CHILD = "is_last_child"
     IS_SUBPLAN = "is_subplan"
     DEPTH = "depth"  # depth/layer number
@@ -144,6 +149,8 @@ class GrafanaNodeEnum(StrEnum):
     MAINSTAT = "mainstat"  # property: timing (total - startup time)
     SECONDARYSTAT = "secondarystat"  # property: rows
     DETAIL__ = "detail__"  # add desired prop suffix
+    NODERADIUS = "nodeRadius"
+    COLOR = "color"
     # Todo: add "highlighted" for important paths
 
 

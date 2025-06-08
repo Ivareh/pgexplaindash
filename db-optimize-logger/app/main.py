@@ -1,19 +1,8 @@
-from pathlib import Path
 from typing import Any
 
-import pandas as pd
-from db import (
-    execute_explain_stmt,
-)
-from logs.logger import explain_logger, graph_node_logger, setup_logging
-from node_graph_plan import (
-    create_graphedge_table,
-    create_graphnode_table,
-    create_level_divider,
-)
-from sqlalchemy import text
+from logs.logger import explain_logger, setup_logging
 
-from app.node_process import extract_node_series, process_explain_df
+from app.query_handler import load_database_queries, process_queries
 
 
 def log_with_query(query_id: str, log_dict: dict[str, Any]) -> None:
@@ -42,98 +31,5 @@ def log_with_query(query_id: str, log_dict: dict[str, Any]) -> None:
 
 if __name__ == "__main__":
     setup_logging()
-
-    sql_script = Path("/app/app/scripts/json_explain_to_text_explain.sql")
-    # load_sql_script(sql_script)
-
-    queries = [
-        {
-            "query_id": "1 week Watcher Eye Increased Max Life",
-            "statement": text(
-                """
-                    EXPLAIN (ANALYZE, FORMAT JSON) SELECT item."itemId", item."createdHoursSinceLaunch", item."itemBaseTypeId",
-                    item."currencyId", item."currencyAmount", currency."tradeName", currency."valueInChaos",
-                    currency."createdHoursSinceLaunch" AS "currencyCreatedHoursSinceLaunch"
-
-                    FROM item JOIN currency ON currency."currencyId" = item."currencyId"
-                    WHERE item.league = 'Phrecia' AND item."createdHoursSinceLaunch" >= 0 AND item."createdHoursSinceLaunch" <= 312
-
-                    AND
-
-                    (EXISTS (SELECT 1 FROM item_modifier
-
-                    WHERE item."itemId" = item_modifier."itemId" AND item_modifier."modifierId" = 85
-
-                    AND item_modifier."createdHoursSinceLaunch" >= 0 AND item_modifier."createdHoursSinceLaunch" <= 312
-                    ))
-
-                    AND item.name = 'Watcher''s Eye' AND item."itemBaseTypeId"= 29;
-                """
-            ),
-        },
-        {
-            "query_id": "2 week Watcher Eye Increased Max Life",
-            "statement": text(
-                """
-                    EXPLAIN (ANALYZE, FORMAT JSON) SELECT item."itemId", item."createdHoursSinceLaunch", item."itemBaseTypeId",
-                    item."currencyId", item."currencyAmount", currency."tradeName", currency."valueInChaos",
-                    currency."createdHoursSinceLaunch" AS "currencyCreatedHoursSinceLaunch"
-                    FROM item JOIN currency ON currency."currencyId" = item."currencyId"
-                    WHERE item.league = 'Phrecia' AND item."createdHoursSinceLaunch" >= 0 AND item."createdHoursSinceLaunch" <= 624
-                    AND
-                    (EXISTS (SELECT 1 FROM item_modifier
-                    WHERE item."itemId" = item_modifier."itemId" AND item_modifier."modifierId" = 85
-                    AND item_modifier."createdHoursSinceLaunch" >= 0 AND item_modifier."createdHoursSinceLaunch" <= 624
-                    ))
-                    AND item.name = 'Watcher''s Eye' AND item."itemBaseTypeId"= 29;
-                """
-            ),
-        },
-    ]
-
-    for query in queries:
-        statement = query["statement"]
-        query_id = query["query_id"]
-        explain_explain_dump = execute_explain_stmt(
-            statement=statement,
-            query_id=query_id,
-        )
-
-        explain_dir = Path("/app/file/explain_output")
-        graphs_dir = Path("/app/file/graphs_output")
-
-        explain_df = pd.DataFrame([explain_explain_dump])
-
-        explain_df.to_json(
-            explain_dir / f"{query_id}.json", orient="records", lines=True
-        )
-
-        explain_df = process_explain_df(explain_df)
-
-        node_series = extract_node_series(explain_df)
-
-        graphnode_df = create_graphnode_table(node_series)
-        graphedge_df = create_graphedge_table(node_series)
-
-        graphnode_dict = graphnode_df.to_dict(orient="records")
-        graphedge_dict = graphedge_df.to_dict(orient="records")
-
-        for node in graphnode_dict:
-            graph_node_logger.info(f"query_id={query_id}&node={node}")
-        for edge in graphedge_dict:
-            graph_node_logger.info(f"query_id={query_id}&edge={edge}")
-
-        level_divider_df = create_level_divider(node_series)
-        level_divider_dict = level_divider_df.to_dict(orient="records")
-
-        for index, level in enumerate(level_divider_dict):
-            index_character = chr(
-                ord("@") + index + 1
-            )  # converts index to corresponding letter in alphabet series
-            log_with_query(
-                query_id=query_id,
-                log_dict={
-                    "index": index_character + str(index),
-                    "level_divide": level["nodes"],
-                },
-            )
+    queries = load_database_queries()
+    process_queries(queries)
