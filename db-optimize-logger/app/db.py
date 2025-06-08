@@ -109,11 +109,11 @@ def save_db_instance(db_instance: DatabaseInstance) -> None:
 def execute_explain_stmt(
     db_instance: DatabaseInstance,
     statement: TextClause,
-    query_id: str,
+    query_name: str,
 ) -> dict[Any, Any]:
     # Returns JSON string representation of explain query
     explain_logger.info(
-        f"Performing query in db.id={db_instance.id} with query_id={query_id}"
+        f"Performing query in db.id={db_instance.id} with query_name={query_name}"
     )
     with db_instance.engine.begin() as conn:
         explain = conn.execute(statement)

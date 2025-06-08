@@ -4,15 +4,12 @@
 
 if (.logger == "graph_node_logger") {
     if (contains(string!(.message), "&node")) {
-        .message = parse_regex!(.message, r'query_id=(?P<query_id>[^&]+)&node=(?P<node>.+)')
+        .message = parse_regex!(.message, r'query_name=(?P<query_name>[^&]+)&node=(?P<node>.+)')
     } else if (contains(string!(.message), "&edge")) {
-        .message = parse_regex!(.message, r'query_id=(?P<query_id>[^&]+)&edge=(?P<edge>.+)')
+        .message = parse_regex!(.message, r'query_name=(?P<query_name>[^&]+)&edge=(?P<edge>.+)')
     }
-} else if (.logger == "explain_analyze_text") {
-	if (contains(string!(.message), "&plan")) {
-        .message = parse_regex!(.message, r'query_id=(?P<query_id>[^&]+)&plan=(?P<plan>.+)')
-		.plan = .message.plan
+} else if (.logger == "explain_logger") {
+	if (contains(string!(.message), "&")) {
+        .message = parse_key_value!(.message, "=", "&")
 	}
 }
-
-

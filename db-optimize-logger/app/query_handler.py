@@ -21,24 +21,24 @@ from sqlalchemy import TextClause, text
 QUERIES_SAVES_CSV = Path("app/saves/queries.csv")
 
 
-def log_with_query(query_id: str, log_dict: dict[str, Any]) -> None:
+def log_with_query(query_name: str, log_dict: dict[str, Any]) -> None:
     """
-    Logs query_id with keys and values for log_dict.
+    Logs `query_name` with keys and values for log_dict.
     Vector.dev config uses regex matches to produce an object with key and values
-    for query_id and items in log_dict.
+    for `query_name` and items in log_dict.
 
 
-    NB!: The keys and values in query_id and log_dict can't have '&' in them in conflict
+    NB!: The keys and values in `query_name` and log_dict can't have '&' in them in conflict
     of the regex matches. This is a temporary fault.
 
     Example:
 
-        Input: log_with_query("qid1", {"key1": "value1", "key2": "value2"})
-        Output: query_id=qid1&key1=value1&key2=value2
+        Input: log_with_query("qname1", {"key1": "value1", "key2": "value2"})
+        Output: query_name=qname1&key1=value1&key2=value2
 
 
     """
-    log_stmt = f"query_id={query_id}"
+    log_stmt = f"query_name={query_name}"
     log_stmt = log_stmt + "".join(
         [f"&{key}={value}" for key, value in log_dict.items()]
     )
@@ -153,13 +153,14 @@ def load_database_queries() -> pd.DataFrame:
 
 
 def process_queries(queries: pd.DataFrame) -> None:
-    def process_sql(row):
+    for _, row in queries.iterrows():
         db_instance_id = row["db_instance_id"]
         db_instance = find_db_instance(db_instance_id)
-        query_id = row["name"]
+        id = row["id"]
+        query_name = row["name"] + "_" + id[:6]
         sql = text(row["sql"])
         explain_dump = execute_explain_stmt(
-            db_instance=db_instance, statement=sql, query_id=query_id
+            db_instance=db_instance, statement=sql, query_name=query_name
         )
 
         explain_dir = Path("/app/file/explain_output")
@@ -167,7 +168,7 @@ def process_queries(queries: pd.DataFrame) -> None:
         explain_df = pd.DataFrame([explain_dump])
 
         explain_df.to_json(
-            explain_dir / f"{query_id}.json", orient="records", lines=True
+            explain_dir / f"{query_name}.json", orient="records", lines=True
         )
 
         explain_df = process_explain_df(explain_df)
@@ -181,9 +182,9 @@ def process_queries(queries: pd.DataFrame) -> None:
         graphedge_dict = graphedge_df.to_dict(orient="records")
 
         for node in graphnode_dict:
-            graph_node_logger.info(f"query_id={query_id}&node={node}")
+            graph_node_logger.info(f"query_name={query_name}&node={node}")
         for edge in graphedge_dict:
-            graph_node_logger.info(f"query_id={query_id}&edge={edge}")
+            graph_node_logger.info(f"query_name={query_name}&edge={edge}")
 
         level_divider_df = create_level_divider(node_series)
         level_divider_dict = level_divider_df.to_dict(orient="records")
@@ -193,11 +194,9 @@ def process_queries(queries: pd.DataFrame) -> None:
                 ord("@") + index + 1
             )  # converts index to corresponding letter in alphabet series
             log_with_query(
-                query_id=query_id,
+                query_name=query_name,
                 log_dict={
                     "index": index_character + str(index),
                     "level_divide": level["nodes"],
                 },
             )
-
-    queries.apply(process_sql, axis=1)
