@@ -9,7 +9,7 @@ services:
       args:
         INSTALL_DEV: ${INSTALL_DEV-false}
     networks:
-      - ${NETWORK?Variable not set}
+      - external-network
     volumes:
       - ./file/explain_output:/app/file/explain_output
       - ./file/graphs_output:/app/file/graphs_output
@@ -25,7 +25,7 @@ services:
     env_file:
       - .env
     networks:
-      - ${NETWORK?Variable not set}
+     - external-network
     volumes:
       - ./file:/var/log/
       - ./vector/vector.yaml:/etc/vector/vector.yaml:ro
@@ -42,7 +42,7 @@ services:
     env_file:
       - .env
     networks:
-      - ${NETWORK?Variable not set}
+      - external-network
     volumes:
       - ./loki.yaml:/etc/loki/local-config.yaml
       - loki-data:/var/lib/loki
@@ -54,7 +54,7 @@ services:
       file: ./ivarehaugland-explaindbdashboard-app/.config/docker-compose-base.yaml
       service: grafana
     networks:
-      - ${NETWORK?Variable not set}
+      - external-network
 
 
 volumes:
@@ -64,5 +64,6 @@ volumes:
     name: "dol-loki-data"
 
 networks:
-  traefik-public:
+  external-network:
     external: true
+    name: ${NETWORK?Variable not set}
