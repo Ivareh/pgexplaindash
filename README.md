@@ -57,7 +57,7 @@ network.
 docker network create `name`
 ```
 
-** Setup external network with PostgreSQL databaes in docker-compose **
+**Setup external network with PostgreSQL databaes in docker-compose**
 
 ```yaml
 pg-container:
