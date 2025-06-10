@@ -1,5 +1,8 @@
 # pg-explain-optimize-dashboard
 
+![pgdashmerged_cropped](https://github.com/user-attachments/assets/b6a6a156-fd4b-4169-9ccf-c1b7bad570a9)
+
+
 Integrated application using Python, Grafana, Vector and Loki to store explain analyze query results
 and display them for analyzation in a simple dashboard.
 
@@ -114,5 +117,7 @@ Note: Query execution time depends on complexity. The dashboard will be availabl
 
 #### Access Dashboard
 [http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home](http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home)
+
+
 
 
