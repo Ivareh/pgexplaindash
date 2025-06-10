@@ -16,7 +16,7 @@ the results interactively on the dashboard.
  - [Grafana](https://grafana.com/docs/grafana/latest/)
  - [Vector](https://vector.dev/)
  - [Loki](https://grafana.com/docs/loki/latest/)
- - [Docker Engine or Docker Desktop]
+ - Docker Engine or Docker Desktop
 
 ## How it works
 
@@ -46,6 +46,36 @@ Because these factors can often dominate end‐to‐end response times, be sure 
 
 Please have [Docker Engine](https://docs.docker.com/engine/) or [Docker desktop](https://docs.docker.com/desktop/) installed.
 
+### Setup database connections
+
+Databases must be running on the same Docker network as the program. To do this locally, each container running a PostgreSQL database must be started using the same docker
+network. 
+
+** Create network **
+
+```bash
+docker network create `name`
+```
+
+** Setup external network with PostgreSQL databaes in docker-compose **
+
+```yaml
+pg-container:
+ networks:
+   - `name`
+
+
+networks:
+  `name`:
+    external: true
+```
+
+** Set NETWORK in .env **
+
+```
+NETWORK=`name`
+```
+
 ### Add queries and databases
 
 #### ⚠️ Important Warning
@@ -59,7 +89,7 @@ EXPLAIN (ANALYZE, FORMAT JSON) SELECT ... ;
 ```
 
 
-#### Setup instructions
+#### <a name="setup-instr"></a> Setup instructions
 
 1. Navigate to the project directory:
 
