@@ -24,13 +24,6 @@
       "path": "/a/%PLUGIN_ID%/home",
       "addToNav": true,
       "defaultNav": true
-    },
-    {
-      "type": "page",
-      "name": "Explain",
-      "path": "/a/%PLUGIN_ID%/explain",
-      "addToNav": true,
-      "defaultNav": false
     }
   ],
   "dependencies": {

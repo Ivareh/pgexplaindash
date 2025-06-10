@@ -22,48 +22,55 @@
   "links": [],
   "panels": [
     {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 11,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "# Important!\n\n## Please note that this dashboard is for testing only.\n\n## [Check this link for production dashboard](http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home)\n",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.5.3",
+      "title": "Information",
+      "type": "text"
+    },
+    {
       "datasource": {
         "type": "loki",
         "uid": "PB99A0DFC953F515F"
       },
+      "description": "Includes table with important fields for all queries",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
           "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": true
             },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "inspect": true
           },
+          "links": [
+            {
+              "title": "",
+              "url": "http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home/per-query-metrics?from=now-72h&to=now&timezone=browser&var-query_name=${__data.fields.query_name}"
+            }
+          ],
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -77,42 +84,291 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "ms"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "query_name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 99
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "sql"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 1154
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "db_name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 123
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 0
       },
-      "id": 3,
+      "id": 8,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
         },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "total_exc_time"
+          }
+        ]
       },
       "pluginVersion": "11.5.3",
       "targets": [
         {
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "",
+          "expr": "{job=\"vector\"} |= `explain_logger` |= `db_name` != `level_divide`",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "New panel",
-      "type": "timeseries"
+      "title": "All Queries",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "keepTime": false,
+            "replace": true,
+            "source": "Line"
+          }
+        },
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "keepTime": false,
+            "replace": true,
+            "source": "message"
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              {
+                "field": "total_exc_time"
+              }
+            ]
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "PB99A0DFC953F515F"
+      },
+      "description": "Includes table with important fields for all queries",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": true
+            },
+            "inspect": true
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "db_description"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 679
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.5.3",
+      "targets": [
+        {
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{job=\"vector\"} |= `db_logger` |= `db_name` != `level_divide`",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "All Databases",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "keepTime": false,
+            "replace": true,
+            "source": "Line"
+          }
+        },
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "replace": true,
+            "source": "message"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "db_description": 1,
+              "db_name": 0,
+              "db_url": 2
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "PB99A0DFC953F515F"
+      },
+      "description": "Includes table with important fields for all queries",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "query_name"
+            },
+            "properties": []
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "sql"
+            },
+            "properties": []
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "db_name"
+            },
+            "properties": []
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 9,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": true,
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "pluginVersion": "11.5.3",
+      "targets": [
+        {
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{job=\"vector\"} |= `explain_logger` |= `$query_name` |= `$database` != `level_divide` | json | line_format `{{.message_sql}}`",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Query Statement",
+      "type": "logs"
     },
     {
       "datasource": {
@@ -124,35 +380,208 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 15,
-        "w": 19,
+        "h": 23,
+        "w": 24,
         "x": 0,
-        "y": 8
+        "y": 24
       },
-      "id": 2,
+      "id": 3,
       "options": {
-        "dedupStrategy": "none",
-        "enableInfiniteScrolling": false,
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showLabels": false,
-        "showTime": false,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
+        "edges": {
+          "mainStatUnit": ""
+        },
+        "nodes": {
+          "arcs": [],
+          "mainStatUnit": "ms",
+          "secondaryStatUnit": ""
+        },
+        "zoomMode": "cooperative"
       },
       "pluginVersion": "11.5.3",
       "targets": [
         {
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{job=\"vector\"} |= `\"logger\":\"explain_analyze_text\"` | json | line_format ` {{ .message_query_id }} {{ .message_explain_text }}`",
+          "expr": "{job=\"vector\"} |= `graph_node_logger` |= `$query_name` |= `$database` |= `mainstat`",
+          "queryType": "range",
+          "refId": "Nodes"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "PB99A0DFC953F515F"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{job=\"vector\"} |= `graph_node_logger` |= `$query_name` |=`$database` |= `source`",
+          "hide": false,
+          "queryType": "range",
+          "refId": "Edges"
+        }
+      ],
+      "title": "Execution Plan Graph",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "replace": true,
+            "source": "Line"
+          }
+        },
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "keepTime": false,
+            "replace": true,
+            "source": "message"
+          }
+        },
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "format": "kvp",
+            "source": "node"
+          }
+        },
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "format": "kvp",
+            "source": "edge"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "id",
+                "title",
+                "mainstat",
+                "secondarystat",
+                "detail__Actual Total Time",
+                "detail__Actual Startup Time",
+                "source",
+                "target"
+              ],
+              "pattern": "^(?!(edge)|(node)|(query_name)).*"
+            }
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "mainstat",
+            "renamePattern": "timing"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "secondarystat",
+            "renamePattern": "detail"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "title",
+            "renamePattern": "Node Type"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "^detail__(.*)$",
+            "renamePattern": "$1"
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {}
+        }
+      ],
+      "transparent": true,
+      "type": "nodeGraph"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "PB99A0DFC953F515F"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "id": 5,
+      "options": {
+        "expandLevel": 2,
+        "orderLevels": "asc",
+        "rootName": "Level divider trees",
+        "serieColumn": "serieColumn",
+        "showItemCount": true,
+        "treeFieldTemplateEngine": "simple",
+        "treeFields": "${query_name}\n${level_divide}"
+      },
+      "pluginVersion": "0.1.9",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "PB99A0DFC953F515F"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{job=\"vector\"} |= `explain_logger` |= `level_divide`",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Explain Texts",
-      "type": "logs"
+      "title": "Execution Order Trees",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "format": "json",
+            "jsonPaths": [],
+            "keepTime": false,
+            "replace": false,
+            "source": "Line"
+          }
+        },
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "format": "json",
+            "replace": true,
+            "source": "message"
+          }
+        },
+        {
+          "disabled": true,
+          "id": "formatString",
+          "options": {
+            "outputFormat": "Substring",
+            "stringField": "index",
+            "substringEnd": 0,
+            "substringStart": 0
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "pgillich-tree-panel"
     },
     {
       "datasource": {
@@ -164,18 +593,10 @@
           "color": {
             "mode": "continuous-GrYlRd"
           },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "fieldMinMax": false,
           "links": [
             {
-              "title": "Bar gauge",
-              "url": "http://localhost:3000/d/d09b90a5-7749-42b0-b7e1-21274614203f/?var-file=\"${__data.fields[\"file\"]}\""
+              "title": "",
+              "url": "http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home/per-query-metrics?from=now-72h&to=now&timezone=browser&var-query_name=${__data.fields.query_name}"
             }
           ],
           "mappings": [],
@@ -197,249 +618,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 31,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 60
       },
-      "id": 1,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": ["sum"],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": false,
-            "displayName": "10:6:Actual Total Time"
-          }
-        ]
-      },
-      "pluginVersion": "11.5.3",
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "PB99A0DFC953F515F"
-          },
-          "direction": "backward",
-          "editorMode": "builder",
-          "expr": "{job=\"vector\"} |= `explain_file_json`",
-          "queryType": "range",
-          "refId": "A"
-        }
-      ],
-      "title": "Actual Total&Execution Time table",
-      "transformations": [
-        {
-          "disabled": true,
-          "id": "convertFieldType",
-          "options": {
-            "conversions": [
-              {
-                "destinationType": "other",
-                "targetField": "Line"
-              }
-            ],
-            "fields": {}
-          }
-        },
-        {
-          "id": "extractFields",
-          "options": {
-            "delimiter": ",",
-            "format": "json",
-            "jsonPaths": [],
-            "keepTime": false,
-            "replace": false,
-            "source": "Line"
-          }
-        },
-        {
-          "id": "extractFields",
-          "options": {
-            "delimiter": ",",
-            "format": "json",
-            "source": "message"
-          }
-        },
-        {
-          "disabled": true,
-          "id": "convertFieldType",
-          "options": {
-            "conversions": [
-              {
-                "destinationType": "other",
-                "targetField": "message"
-              }
-            ],
-            "fields": {}
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "byVariable": false,
-            "include": {
-              "pattern": ".*(file|Total Time|Execution Time)"
-            }
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "fields": {},
-            "sort": [
-              {
-                "field": "file"
-              }
-            ]
-          }
-        }
-      ],
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "PB99A0DFC953F515F"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "continuous-GrYlRd"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 23,
-        "w": 24,
-        "x": 0,
-        "y": 32
-      },
-      "id": 4,
-      "options": {
-        "displayMode": "lcd",
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "maxVizHeight": 300,
-        "minVizHeight": 16,
-        "minVizWidth": 8,
-        "namePlacement": "left",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [],
-          "fields": "",
-          "values": true
-        },
-        "showUnfilled": true,
-        "sizing": "auto",
-        "valueMode": "color"
-      },
-      "pluginVersion": "11.5.3",
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "PB99A0DFC953F515F"
-          },
-          "direction": "backward",
-          "editorMode": "builder",
-          "expr": "{job=\"vector\"} |= `explain_file_json` |= `$query_id`",
-          "queryType": "range",
-          "refId": "A"
-        }
-      ],
-      "title": "Line-Time metrics",
-      "transformations": [
-        {
-          "id": "extractFields",
-          "options": {
-            "delimiter": ",",
-            "format": "json",
-            "jsonPaths": [],
-            "keepTime": false,
-            "replace": false,
-            "source": "Line"
-          }
-        },
-        {
-          "id": "extractFields",
-          "options": {
-            "delimiter": ",",
-            "format": "json",
-            "source": "message"
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "byVariable": false,
-            "include": {
-              "pattern": ".*(Total Time|Execution Time)"
-            }
-          }
-        }
-      ],
-      "type": "bargauge"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "PB99A0DFC953F515F"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "continuous-GrYlRd"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 23,
-        "w": 24,
-        "x": 0,
-        "y": 55
-      },
-      "id": 5,
+      "id": 7,
       "options": {
         "minVizHeight": 75,
         "minVizWidth": 75,
@@ -462,55 +646,95 @@
           },
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{job=\"vector\"} |= `explain_file_json`",
+          "expr": "{job=\"vector\"} |= `explain_logger` != `level_divide` |= `total_exc_time` | json | keep message_total_exc_time, message_query_name | line_format `{{.message_total_exc_time}} {{.message_query_name}}`",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Total execution times",
+      "title": "Total Execution Times",
       "transformations": [
         {
           "id": "extractFields",
           "options": {
             "delimiter": ",",
-            "format": "json",
-            "jsonPaths": [],
-            "keepTime": false,
-            "replace": false,
-            "source": "Line"
+            "replace": true,
+            "source": "labels"
           }
         },
         {
-          "id": "extractFields",
+          "id": "convertFieldType",
           "options": {
-            "delimiter": ",",
-            "format": "json",
-            "source": "message"
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "byVariable": false,
-            "include": {
-              "pattern": ".*(Execution Time|file)"
-            }
-          }
-        },
-        {
-          "id": "calculateField",
-          "options": {}
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "pattern": "Total|file"
-            }
+            "conversions": [
+              {
+                "destinationType": "number",
+                "targetField": "message_total_exc_time"
+              }
+            ],
+            "fields": {}
           }
         }
       ],
       "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "PB99A0DFC953F515F"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 27,
+        "w": 24,
+        "x": 0,
+        "y": 91
+      },
+      "id": 6,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": true,
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "11.5.3",
+      "targets": [
+        {
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{job=\"vector\"} |= `\"source_type\":\"explain_file_json\"` |= `$query_name` | json",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Plan Raw",
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "pattern": "Line|Time"
+            }
+          }
+        },
+        {
+          "disabled": true,
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "keepTime": true,
+            "replace": true,
+            "source": "Line"
+          }
+        }
+      ],
+      "type": "logs"
     }
   ],
   "preload": false,
@@ -520,22 +744,42 @@
     "list": [
       {
         "current": {
-          "text": "2 week Watcher Eye Increased Max Life_response",
-          "value": "2 week Watcher Eye Increased Max Life_response"
+          "text": ["1 week watchers eye increased max life__POM 2 db"],
+          "value": ["1 week watchers eye increased max life__POM 2 db"]
         },
         "definition": "",
         "includeAll": false,
         "multi": true,
-        "name": "query_id",
+        "name": "query_name",
         "options": [],
         "query": {
-          "label": "file",
+          "label": "query_name",
           "refId": "LokiVariableQueryEditor-VariableQuery",
           "stream": "",
           "type": 1
         },
         "refresh": 1,
-        "regex": "(.*)(?:\\.json)",
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": ["POM 2 db", "POM default db"],
+          "value": ["POM 2 db", "POM default db"]
+        },
+        "definition": "",
+        "description": "",
+        "multi": true,
+        "name": "database",
+        "options": [],
+        "query": {
+          "label": "database",
+          "refId": "LokiVariableQueryEditor-VariableQuery",
+          "stream": "",
+          "type": 1
+        },
+        "refresh": 1,
+        "regex": "",
         "type": "query"
       }
     ]
@@ -546,8 +790,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Explain Analyze Logs",
+  "title": "TESTING Explain Analyze Logs",
   "uid": "d09b90a5-7749-42b0-b7e1-21274614203f",
-  "version": 1,
+  "version": 14,
   "weekStart": ""
 }

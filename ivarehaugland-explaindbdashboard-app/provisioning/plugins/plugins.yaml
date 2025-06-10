@@ -1,0 +1,6 @@
+apiVersion: 1
+
+plugins:
+  - name: pgillich-tree-panel  # Plugin ID
+    type: panel                    # Plugin type
+    version: "0.1.9"               # Version to install (optional but recommended)

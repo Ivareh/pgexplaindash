@@ -5,12 +5,11 @@ import { config } from '@grafana/runtime';
 import { Alert } from '@grafana/ui';
 import { DATASOURCE_REF } from '../../constants';
 import { PluginPropsContext } from '../../utils/utils.plugin';
-import { explainPage } from '../../pages/Explain/explainPage';
 import { homePage } from '../../pages/Home/homePage';
 
 function getSceneApp() {
   return new SceneApp({
-    pages: [explainPage, homePage],
+    pages: [homePage],
     urlSyncOptions: {
       updateUrlOnInit: true,
       createBrowserHistorySteps: true,
