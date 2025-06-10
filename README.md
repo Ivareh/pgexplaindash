@@ -9,6 +9,8 @@ and display them for analyzation in a simple dashboard.
 The motivation is to have many PostgreSQL explain analyze queries and databases and execute everything in one run, then analyze
 the results interactively on the dashboard.
 
+Inspired by [pev2](https://github.com/dalibo/pev2). Please check out this amazing tool.
+
 ## Requirements
 
  - Python
