@@ -53,7 +53,7 @@ The system doesn't sanitize `&`, which causes hard-to-diagnose errors or silent 
 Only `EXPLAIN ANALYZE` queries in JSON format are supported. Always format SQL statements as:
 ```sql
 EXPLAIN (ANALYZE, FORMAT JSON) SELECT ... ;
-
+```
 
 
 #### Setup instructions
@@ -65,7 +65,7 @@ cd `root`/db-optimize-logger
 ```
 
 
-##### Option 1: Using [uv](https://docs.astral.sh/uv/getting-started/installation/#installation-methods)
+**Option 1:** Using [uv](https://docs.astral.sh/uv/getting-started/installation/#installation-methods)
 
 
 ```bash
@@ -74,7 +74,7 @@ uv venv
 uv run app/build_queries.py
 ```
 
-##### Option 2: Using pip:
+**Option 2:** Using pip:
 
 ```bash
 pip install dearpygui pandas pydantic
@@ -94,7 +94,7 @@ After adding queries and databases, you can run the rest of the application.
 The `start.sh` will delete any data from previous run and execute the queries, begin the pipeline and make the dashboard ready.
 
 
-##### Fresh start (deletes previous data)
+**Fresh start** (deletes previous data)
 
 ```bash
 chmod +x start.sh
@@ -102,7 +102,7 @@ chmod +x start.sh
 ./start.sh
 ```
 
-##### Preserve Existing Data
+**Preserve Existing Data**
 
 ```bash
 docker compose up -d
@@ -112,7 +112,7 @@ docker compose up -d
 Note: Query execution time depends on complexity. The dashboard will be available after processing.
 
 
-##### Access Dashboard
+#### Access Dashboard
 [http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home](http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home)
 
 
