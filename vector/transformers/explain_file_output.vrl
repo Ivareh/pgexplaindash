@@ -1,5 +1,6 @@
 if .source_type == "file" {
 	.file = replace!(.file, "/var/log/explain_output/", "")
 	.message = parse_json!(.message)
+	.database = .message.database
 	.source_type = "explain_file_json"
 }
