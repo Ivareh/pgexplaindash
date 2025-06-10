@@ -51,7 +51,7 @@ Please have [Docker Engine](https://docs.docker.com/engine/) or [Docker desktop]
 Databases must be running on the same Docker network as the program. To do this locally, each container running a PostgreSQL database must be started using the same docker
 network. 
 
-** Create network **
+**Create network**
 
 ```bash
 docker network create `name`
@@ -70,7 +70,7 @@ networks:
     external: true
 ```
 
-** Set NETWORK in .env **
+**Set env var `NETWORK` in `.env`**
 
 ```
 NETWORK=`name`
