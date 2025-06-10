@@ -3,9 +3,10 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from logs.logger import explain_logger
+from logs.logger import db_logger, explain_logger
 from pydantic import BaseModel, PostgresDsn
 from sqlalchemy import Engine, TextClause, create_engine
+from utils import log_key_value
 
 DATABASES_SAVES_CSV = Path("app/saves/databases.csv")
 
@@ -13,6 +14,7 @@ DATABASES_SAVES_CSV = Path("app/saves/databases.csv")
 class DatabaseInstance(BaseModel):
     id: str
     name: str
+    description: str
     url: str
 
     @property
@@ -58,6 +60,7 @@ def find_db_instance(id: str) -> DatabaseInstance:
     return DatabaseInstance(
         id=id_existing_index["id"].values[0],
         name=id_existing_index["name"].values[0],
+        description=id_existing_index["description"].values[0],
         url=id_existing_index["url"].values[0],
     )
 
@@ -89,7 +92,7 @@ def save_db_instance(db_instance: DatabaseInstance) -> None:
     try:
         saves_df = pd.read_csv(DATABASES_SAVES_CSV)
     except FileNotFoundError:
-        cols = pd.Index(["id", "name", "url"])
+        cols = pd.Index(["id", "name", "description", "url"])
         saves_df = pd.DataFrame(columns=cols)
         saves_df.to_csv(DATABASES_SAVES_CSV, index=False)
 
@@ -103,6 +106,36 @@ def save_db_instance(db_instance: DatabaseInstance) -> None:
     saves_df = pd.concat([saves_df, db_instance_df], ignore_index=True)
 
     saves_df.to_csv(DATABASES_SAVES_CSV, index=False)
+
+
+class NoDatabasesFoundError(Exception):
+    def __init__(self, *args):
+        detail = "Found no saved queries, please add some queries before starting the program"
+        super().__init__(detail, args)
+
+
+def load_database_instances() -> pd.DataFrame:
+    try:
+        saves_df = pd.read_csv(DATABASES_SAVES_CSV)
+    except FileNotFoundError:
+        raise NoDatabasesFoundError
+
+    if saves_df.empty:
+        raise NoDatabasesFoundError
+
+    return saves_df
+
+
+def process_databases(databases: pd.DataFrame) -> None:
+    for _, row in databases.iterrows():
+        db_name = row["name"]
+        db_description = row["description"]
+        db_url = row["url"]
+
+        log_key_value(
+            db_logger,
+            {"db_name": db_name, "db_description": db_description, "db_url": db_url},
+        )
 
 
 # @sync_timing_tracker
@@ -121,6 +154,7 @@ def execute_explain_stmt(
     assert explain
 
     explain_dump: dict[Any, Any] = explain.scalar_one()[0]
+    explain_dump["database"] = db_instance.name + "_" + db_instance.id[:6]
 
     assert isinstance(explain_dump, dict)
     return explain_dump

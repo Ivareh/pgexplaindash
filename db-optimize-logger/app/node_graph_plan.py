@@ -15,7 +15,11 @@ def create_graphnode_table(node_series: pd.Series) -> pd.DataFrame:
     graphnode_df = pd.DataFrame(
         {
             GNE.ID.value: node_series.str[NodeEnum.NODE_ID],
-            GNE.TITLE.value: node_series.str[NodeEnum.NODE_TYPE],
+            GNE.TITLE.value: (
+                node_series.str.get(NodeEnum.INDEX).astype(str)
+                + "  "
+                + node_series.str.get(NodeEnum.NODE_TYPE).astype(str)
+            ),
             GNE.MAINSTAT.value: node_series.str[NodeEnum.TIMING],
             GNE.SECONDARYSTAT.value: node_series.str[NodeEnum.NODE_TYPE_DETAIL],
             f"{GNE.DETAIL__.value}{NodeEnum.ACTUAL_ROWS.value}": node_series.str[
@@ -81,6 +85,12 @@ def create_level_divider(node_series: pd.Series) -> pd.DataFrame:
 
     # Combine components
     full_prefix = depth_prefix + base_prefix
-    level_divider_str = '"' + full_prefix + node_types + '"'
+
+    # **here’s the magic**: swap EVERY normal space for a NBSP
+    #   NBSP is Unicode U+00A0, which browsers will render and not collapse.
+    full_prefix_nbsp = full_prefix.str.replace(" ", "\u00a0")
+
+    # now append your node label/type
+    level_divider_str = full_prefix_nbsp + node_types
 
     return pd.concat([node_series, level_divider_str], axis=1).reset_index()

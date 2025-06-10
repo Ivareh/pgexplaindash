@@ -41,6 +41,12 @@ loggers:
       - exp_anal_file
       - stdout
     propagate: no
+  db_logger:
+    level: DEBUG
+    handlers:
+      - exp_anal_file
+      - stdout
+    propagate: no
   graph_node_logger:
     level: INFO
     handlers:

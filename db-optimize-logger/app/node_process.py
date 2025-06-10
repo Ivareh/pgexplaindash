@@ -60,11 +60,12 @@ def extract_nodes(plan_dict: dict[str, Any]) -> list[dict[str, Any]]:
         type_service = NodeTypeService(node_type)
         type_detail = type_service.create_node_type_detail(node_data)
         description = type_service.get_description()
+        index_str = str(index) if len(str(index)) >= 2 else "0" + str(index)
         current_node = {
             **node_data,
             NE.NODE_ID.value: node_id,
             NE.PARENT_NODE.value: parent_id,
-            NE.INDEX.value: index,
+            NE.INDEX.value: index_str,
             NE.DEPTH.value: node_depth,
             NE.BRANCHES.value: branches[:-1],
             NE.TIMING.value: None,

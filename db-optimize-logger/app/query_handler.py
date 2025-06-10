@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 from db import (
@@ -8,6 +7,7 @@ from db import (
     execute_explain_stmt,
     find_db_instance,
 )
+from interface import PlanEnum
 from logs.logger import explain_logger, graph_node_logger
 from node_graph_plan import (
     create_graphedge_table,
@@ -17,32 +17,9 @@ from node_graph_plan import (
 from node_process import extract_node_series, process_explain_df
 from pydantic import BaseModel
 from sqlalchemy import TextClause, text
+from utils import log_key_value
 
 QUERIES_SAVES_CSV = Path("app/saves/queries.csv")
-
-
-def log_with_query(query_name: str, log_dict: dict[str, Any]) -> None:
-    """
-    Logs `query_name` with keys and values for log_dict.
-    Vector.dev config uses regex matches to produce an object with key and values
-    for `query_name` and items in log_dict.
-
-
-    NB!: The keys and values in `query_name` and log_dict can't have '&' in them in conflict
-    of the regex matches. This is a temporary fault.
-
-    Example:
-
-        Input: log_with_query("qname1", {"key1": "value1", "key2": "value2"})
-        Output: query_name=qname1&key1=value1&key2=value2
-
-
-    """
-    log_stmt = f"query_name={query_name}"
-    log_stmt = log_stmt + "".join(
-        [f"&{key}={value}" for key, value in log_dict.items()]
-    )
-    explain_logger.info(log_stmt)
 
 
 class DatabaseQuery(BaseModel):
@@ -154,11 +131,14 @@ def load_database_queries() -> pd.DataFrame:
 
 def process_queries(queries: pd.DataFrame) -> None:
     for _, row in queries.iterrows():
-        db_instance_id = row["db_instance_id"]
+        db_instance_id = str(row["db_instance_id"])
         db_instance = find_db_instance(db_instance_id)
-        id = row["id"]
-        query_name = row["name"] + "_" + id[:6]
-        sql = text(row["sql"])
+
+        id_short = row["id"][:6]
+        db_name = db_instance.name
+        query_name = f"{row['name']}__{db_name}__{id_short}"
+        sql = text(str(row["sql"]))
+
         explain_dump = execute_explain_stmt(
             db_instance=db_instance, statement=sql, query_name=query_name
         )
@@ -172,6 +152,15 @@ def process_queries(queries: pd.DataFrame) -> None:
         )
 
         explain_df = process_explain_df(explain_df)
+        log_key_value(
+            explain_logger,
+            {
+                "db_name": db_name,
+                "query_name": query_name,
+                "sql": str(row["sql"]),
+                "total_exc_time": explain_dump[PlanEnum.EXECUTION_TIME],
+            },
+        )
 
         node_series = extract_node_series(explain_df)
 
@@ -182,21 +171,34 @@ def process_queries(queries: pd.DataFrame) -> None:
         graphedge_dict = graphedge_df.to_dict(orient="records")
 
         for node in graphnode_dict:
-            graph_node_logger.info(f"query_name={query_name}&node={node}")
+            graph_node_logger.info(
+                f"db_name={db_name}&query_name={query_name}&node={node}"
+            )
         for edge in graphedge_dict:
-            graph_node_logger.info(f"query_name={query_name}&edge={edge}")
+            graph_node_logger.info(
+                f"db_name={db_name}&query_name={query_name}&edge={edge}"
+            )
 
         level_divider_df = create_level_divider(node_series)
         level_divider_dict = level_divider_df.to_dict(orient="records")
+        n = len(level_divider_dict)
+
+        max_index_width = 1 + len(str(n - 1)) if n > 0 else 0
 
         for index, level in enumerate(level_divider_dict):
-            index_character = chr(
-                ord("@") + index + 1
-            )  # converts index to corresponding letter in alphabet series
-            log_with_query(
-                query_name=query_name,
+            prefix_index = "0" if len(str(index)) < 2 else ""
+            index_str = prefix_index + str(index)
+            padded_index = index_str.ljust(max_index_width)  # Pad to fixed width
+            padded_index = padded_index.replace(" ", "\u00a0")
+            full_log_line = (
+                f"{padded_index} {level['nodes']}"  # Combine with log content
+            )
+
+            log_key_value(
+                explain_logger,
                 log_dict={
-                    "index": index_character + str(index),
-                    "level_divide": level["nodes"],
+                    "db_name": db_name,
+                    "query_name": query_name,
+                    "level_divide": full_log_line,  # Use aligned log line
                 },
             )

@@ -35,6 +35,7 @@ def delete_database(tag: str):
     dpg.delete_item(f"db_id_{tag}")
     dpg.delete_item(f"db_url_fields_{tag}")
     dpg.delete_item(f"db_name_{tag}")
+    dpg.delete_item(f"db_description_{tag}")
     dpg.delete_item(f"db_username_{tag}")
     dpg.delete_item(f"db_password_{tag}")
     dpg.delete_item(f"db_host_{tag}")
@@ -46,7 +47,10 @@ def delete_database(tag: str):
     dpg.delete_item(f"delete_db_{tag}")
     dpg.delete_item(f"db_save_error_{tag}")
 
-    delete_db_instance(tag)
+    try:
+        delete_db_instance(tag)
+    except Exception:
+        return
 
 
 def load_databases() -> None:
@@ -61,12 +65,14 @@ def load_databases() -> None:
     def process_database(database_instance_row):
         id = database_instance_row.id
         name = database_instance_row["name"]
+        description = database_instance_row["description"]
         db_url = PostgresDsn(database_instance_row.url)
         path = db_url.path[1:] if db_url.path else None
         url_dict = db_url.hosts()[0]
         add_database(
             default_tag=id,
             default_name=name,
+            default_description=description,
             default_username=url_dict["username"],
             default_password=url_dict["password"],
             default_host=url_dict["host"],
@@ -78,7 +84,14 @@ def load_databases() -> None:
 
 
 def save_database(
-    id: str, name: str, username: str, password: str, host: str, port: int, db: str
+    id: str,
+    name: str,
+    description: str,
+    username: str,
+    password: str,
+    host: str,
+    port: int,
+    db: str,
 ) -> None:
     db_url = create_db_url(
         username=username,
@@ -87,7 +100,9 @@ def save_database(
         port=port,
         db=db,
     )
-    db_instance = DatabaseInstance(id=id, name=name, url=str(db_url))
+    db_instance = DatabaseInstance(
+        id=id, name=name, description=description, url=str(db_url)
+    )
     save_db_instance(db_instance)
 
 
@@ -102,6 +117,7 @@ def _save_database_callback(sender, app_data, user_data):
     tag = user_data
 
     name = dpg.get_value(f"db_name_{tag}")
+    description = dpg.get_value(f"db_description_{tag}")
     username = dpg.get_value(f"db_username_{tag}")
     password = dpg.get_value(f"db_password_{tag}")
     host = dpg.get_value(f"db_host_{tag}")
@@ -112,6 +128,7 @@ def _save_database_callback(sender, app_data, user_data):
         save_database(
             id=tag,
             name=name,
+            description=description,
             username=username,
             password=password,
             host=host,
@@ -153,6 +170,7 @@ def _save_all_databases_callback(sender) -> None:
 
     for tag in tags:
         name = dpg.get_value(f"db_name_{tag}")
+        description = dpg.get_value(f"db_description_{tag}")
         username = dpg.get_value(f"db_username_{tag}")
         password = dpg.get_value(f"db_password_{tag}")
         host = dpg.get_value(f"db_host_{tag}")
@@ -163,6 +181,7 @@ def _save_all_databases_callback(sender) -> None:
             save_database(
                 id=tag,
                 name=name,
+                description=description,
                 username=username,
                 password=password,
                 host=host,
@@ -192,6 +211,7 @@ def _save_all_databases_callback(sender) -> None:
 def add_database(
     default_tag: str | None = None,
     default_name: str | None = "",
+    default_description: str | None = "",
     default_username: str | None = "",
     default_password: str | None = "",
     default_host: str | None = "",
@@ -202,6 +222,7 @@ def add_database(
 
     defaults = {
         "name": default_name or "",
+        "description": default_description or "",
         "username": default_username or "",
         "password": default_password or "",
         "host": default_host or "",
@@ -225,6 +246,11 @@ def add_database(
             label="Add name",
             tag=f"db_name_{database_tag}",
             default_value=defaults["name"],
+        )
+        dpg.add_input_text(
+            label="Add description",
+            tag=f"db_description_{database_tag}",
+            default_value=defaults["description"],
         )
 
         dpg.add_text(
@@ -281,7 +307,10 @@ def delete_query(tag: str):
     dpg.delete_item(f"query_separator_{tag}")
     dpg.delete_item(f"query_save_error_{tag}")
 
-    delete_database_query(tag)
+    try:
+        delete_database_query(tag)
+    except Exception:
+        return
 
 
 def delete_all_queries_callback():
@@ -358,12 +387,7 @@ def _save_query_callback(sender, app_data, user_data):
 
     error_value = dpg.get_value(f"query_save_error_{tag}")
     try:
-        save_query(
-            tag,
-            database_id,
-            name,
-            sql,
-        )
+        save_query(tag, database_id, name, sql)
         dpg.set_item_label(sender, "Saved!")
         if error_value:
             dpg.delete_item(f"query_save_error_{tag}")
@@ -440,15 +464,18 @@ def add_query(
     group_tag = f"query_group_{query_tag}"
     with dpg.group(tag=group_tag, parent="queries"):
         input_text_fields = [
-            ("database_id", "Database instance id"),
-            ("name", "Query name"),
-            ("sql", "Statement"),
+            ("database_id", "Database instance id", 20),
+            ("name", "Query name", 20),
+            ("sql", "Statement", 300),
         ]
-        for field_name, label in input_text_fields:
+        for field_name, label, height in input_text_fields:
             dpg.add_input_text(
                 label=label,
                 tag=f"query_{field_name}_{query_tag}",
                 default_value=defaults[field_name],
+                height=height,
+                width=750,
+                multiline=True,
             )
         dpg.add_button(
             label="Save Query",
@@ -469,12 +496,12 @@ def add_query(
         )
 
 
-with dpg.window(label="Query Builder", tag="query_builder", width=400, height=700):
+with dpg.window(label="Query Builder", tag="query_builder", width=1000, height=800):
     dpg.add_child_window(
         label="Queries Container",
         tag="queries",
         autosize_x=True,
-        height=500,
+        height=700,
     )
 
     load_queries()

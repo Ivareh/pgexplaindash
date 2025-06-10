@@ -18,4 +18,5 @@ def setup_logging():
 
 
 explain_logger = logging.getLogger("explain_logger")
+db_logger = logging.getLogger("db_logger")
 graph_node_logger = logging.getLogger("graph_node_logger")
