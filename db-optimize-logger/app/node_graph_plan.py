@@ -11,6 +11,31 @@ from interface import (
 )
 
 
+def create_node_metrics_df(node_series: pd.Series) -> pd.DataFrame:
+    node_metrics_df = pd.DataFrame(
+        {
+            NodeEnum.INDEX.value: node_series.str[NodeEnum.INDEX],
+            NodeEnum.NODE_TYPE.value: node_series.str[NodeEnum.NODE_TYPE],
+            NodeEnum.TIMING_MS.value: node_series.str[NodeEnum.TIMING_MS],
+            "timing_pct": node_series.str.get(NodeEnum.TIMING_PROPORTION).astype(float)
+            * 100,
+            NodeEnum.NODE_TYPE_DETAIL.value: node_series.str[NodeEnum.NODE_TYPE_DETAIL],
+            NodeEnum.ACTUAL_ROWS.value: node_series.str[NodeEnum.ACTUAL_ROWS],
+            NodeEnum.TOTAL_COST.value: node_series.str[NodeEnum.TOTAL_COST],
+            NodeEnum.ACTUAL_TOTAL_TIME.value: node_series.str[
+                NodeEnum.ACTUAL_TOTAL_TIME
+            ],
+            NodeEnum.ACTUAL_STARTUP_TIME.value: node_series.str[
+                NodeEnum.ACTUAL_STARTUP_TIME
+            ],
+            NodeEnum.NODE_TYPE_DETAIL.value: node_series.str[NodeEnum.NODE_TYPE_DETAIL],
+            NodeEnum.DESCRIPTION.value: node_series.str[NodeEnum.DESCRIPTION],
+        }
+    )
+
+    return node_metrics_df
+
+
 def create_graphnode_table(node_series: pd.Series) -> pd.DataFrame:
     graphnode_df = pd.DataFrame(
         {
@@ -25,12 +50,14 @@ def create_graphnode_table(node_series: pd.Series) -> pd.DataFrame:
             f"{GNE.DETAIL__.value}{NodeEnum.ACTUAL_ROWS.value}": node_series.str[
                 NodeEnum.ACTUAL_ROWS
             ],
-            f"{GNE.DETAIL__.value}{NodeEnum.ACTUAL_TOTAL_TIME.value}": node_series.str[
+            f"{GNE.DETAIL__.value}{NodeEnum.ACTUAL_TOTAL_TIME.value}": node_series.str.get(
                 NodeEnum.ACTUAL_TOTAL_TIME
-            ],
-            f"{GNE.DETAIL__.value}{NodeEnum.ACTUAL_STARTUP_TIME.value}": node_series.str[
+            ).astype(str)
+            + "ms",
+            f"{GNE.DETAIL__.value}{NodeEnum.ACTUAL_STARTUP_TIME.value}": node_series.str.get(
                 NodeEnum.ACTUAL_STARTUP_TIME
-            ],
+            ).astype(str)
+            + "ms",
             f"{GNE.DETAIL__.value}{NodeEnum.TOTAL_COST.value}": node_series.str[
                 NodeEnum.TOTAL_COST
             ],

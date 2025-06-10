@@ -13,6 +13,7 @@ from node_graph_plan import (
     create_graphedge_table,
     create_graphnode_table,
     create_level_divider,
+    create_node_metrics_df,
 )
 from node_process import extract_node_series, process_explain_df
 from pydantic import BaseModel
@@ -164,12 +165,19 @@ def process_queries(queries: pd.DataFrame) -> None:
 
         node_series = extract_node_series(explain_df)
 
+        node_metrics_df = create_node_metrics_df(node_series)
+
         graphnode_df = create_graphnode_table(node_series)
         graphedge_df = create_graphedge_table(node_series)
 
+        node_metrics_dict = node_metrics_df.to_dict(orient="records")
         graphnode_dict = graphnode_df.to_dict(orient="records")
         graphedge_dict = graphedge_df.to_dict(orient="records")
 
+        for node in node_metrics_dict:
+            graph_node_logger.info(
+                f"db_name={db_name}&query_name={query_name}&node={node}"
+            )
         for node in graphnode_dict:
             graph_node_logger.info(
                 f"db_name={db_name}&query_name={query_name}&node={node}"

@@ -201,6 +201,63 @@ export function perQueryMetricScene() {
     ],
   });
 
+  const nodeMetricsRunner = new SceneQueryRunner({
+    datasource: DATASOURCE_REF,
+    queries: [
+      {
+        ...queryRunner.state.queries[0],
+        expr: `{job="vector"} |= \`graph_node_logger\` != \`source\` or \`target\` or \`mainstat\` |= \`$query_name\``,
+      },
+    ],
+  });
+
+  const nodeMetricsData = new SceneDataTransformer({
+    $data: nodeMetricsRunner,
+    transformations: [
+      {
+        id: 'extractFields',
+        options: {
+          delimiter: ',',
+          keepTime: false,
+          replace: true,
+          source: 'Line',
+        },
+      },
+      {
+        id: 'extractFields',
+        options: {
+          delimiter: ',',
+          replace: true,
+          source: 'message',
+        },
+      },
+      {
+        id: 'extractFields',
+        options: {
+          delimiter: ',',
+          replace: true,
+          source: 'node',
+        },
+      },
+      {
+        id: 'filterFieldsByName',
+        options: {
+          include: {
+            pattern: '^(?!(edge|description)).*',
+          },
+        },
+      },
+      {
+        disabled: true,
+        id: 'renameByRegex',
+        options: {
+          regex: '^detail__(.*)$',
+          renamePattern: '$1',
+        },
+      },
+    ],
+  });
+
   const queryStmtRunner = new SceneQueryRunner({
     datasource: DATASOURCE_REF,
     queries: [
@@ -323,15 +380,210 @@ export function perQueryMetricScene() {
           }),
         }),
         new SceneFlexItem({
-          width: 1000,
+          width: 1100,
           minWidth: 400,
-          minHeight: 600,
-          body: PanelBuilders.logs()
-            // Title is using variable value
-            .setTitle('SQL Statement for $query_name')
-            .setData(queryStmtRunner)
-            .setOption('wrapLogMessage', true)
-            .build(),
+          minHeight: 800,
+          body: new VizPanel({
+            $data: nodeMetricsData,
+            pluginId: 'table',
+            title: 'Node Metrics for $query_name',
+            fieldConfig: {
+              defaults: {
+                custom: {
+                  align: 'auto',
+                  cellOptions: {
+                    type: 'auto',
+                    wrapText: true,
+                  },
+                  inspect: true,
+                },
+                mappings: [],
+                thresholds: {
+                  mode: 'absolute' as ThresholdsMode,
+                  steps: [
+                    {
+                      color: 'green',
+                      value: 0,
+                    },
+                    {
+                      color: 'red',
+                      value: 80,
+                    },
+                  ],
+                },
+                color: {
+                  mode: 'thresholds',
+                },
+                links: [],
+              },
+              overrides: [
+                {
+                  matcher: {
+                    id: 'byName',
+                    options: 'query_name',
+                  },
+                  properties: [
+                    {
+                      id: 'custom.width',
+                      value: 382,
+                    },
+                  ],
+                },
+                {
+                  matcher: {
+                    id: 'byName',
+                    options: 'db_name',
+                  },
+                  properties: [
+                    {
+                      id: 'custom.width',
+                      value: 123,
+                    },
+                  ],
+                },
+                {
+                  matcher: {
+                    id: 'byName',
+                    options: 'timing_pct',
+                  },
+                  properties: [
+                    {
+                      id: 'unit',
+                      value: 'percent',
+                    },
+                    {
+                      id: 'custom.width',
+                      value: 90,
+                    },
+                  ],
+                },
+                {
+                  matcher: {
+                    id: 'byRegexp',
+                    options: '(.*)(timing_ms|Time)(.*)',
+                  },
+                  properties: [
+                    {
+                      id: 'unit',
+                      value: 'ms',
+                    },
+                  ],
+                },
+                {
+                  matcher: {
+                    id: 'byName',
+                    options: 'Node Type',
+                  },
+                  properties: [
+                    {
+                      id: 'custom.width',
+                      value: 89,
+                    },
+                  ],
+                },
+                {
+                  matcher: {
+                    id: 'byName',
+                    options: 'timing_ms',
+                  },
+                  properties: [
+                    {
+                      id: 'custom.width',
+                      value: 90,
+                    },
+                  ],
+                },
+                {
+                  matcher: {
+                    id: 'byName',
+                    options: 'Actual Startup Time',
+                  },
+                  properties: [
+                    {
+                      id: 'custom.width',
+                      value: 154,
+                    },
+                  ],
+                },
+                {
+                  matcher: {
+                    id: 'byName',
+                    options: 'Actual Total Time',
+                  },
+                  properties: [
+                    {
+                      id: 'custom.width',
+                      value: 135,
+                    },
+                  ],
+                },
+                {
+                  matcher: {
+                    id: 'byName',
+                    options: 'Total Cost',
+                  },
+                  properties: [
+                    {
+                      id: 'custom.width',
+                      value: 86,
+                    },
+                  ],
+                },
+                {
+                  matcher: {
+                    id: 'byName',
+                    options: 'Actual Rows',
+                  },
+                  properties: [
+                    {
+                      id: 'custom.width',
+                      value: 102,
+                    },
+                  ],
+                },
+                {
+                  matcher: {
+                    id: 'byName',
+                    options: 'index',
+                  },
+                  properties: [
+                    {
+                      id: 'custom.width',
+                      value: 54,
+                    },
+                  ],
+                },
+                {
+                  matcher: {
+                    id: 'byName',
+                    options: 'node_type_detail',
+                  },
+                  properties: [
+                    {
+                      id: 'custom.width',
+                      value: 280,
+                    },
+                  ],
+                },
+              ],
+            },
+            options: {
+              showHeader: true,
+              cellHeight: 'sm',
+              footer: {
+                show: false,
+                reducer: ['sum'],
+                countRows: false,
+                fields: '',
+              },
+              sortBy: [
+                {
+                  desc: false,
+                  displayName: 'index',
+                },
+              ],
+            },
+          }),
         }),
         new SceneFlexItem({
           width: 400,
@@ -395,6 +647,17 @@ export function perQueryMetricScene() {
               valueMode: 'color',
             },
           }),
+        }),
+        new SceneFlexItem({
+          width: 1000,
+          minWidth: 400,
+          minHeight: 600,
+          body: PanelBuilders.logs()
+            // Title is using variable value
+            .setTitle('SQL Statement for $query_name')
+            .setData(queryStmtRunner)
+            .setOption('wrapLogMessage', true)
+            .build(),
         }),
         new SceneFlexItem({
           width: 1130,
