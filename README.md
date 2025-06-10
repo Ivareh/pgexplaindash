@@ -48,8 +48,7 @@ Please have [Docker Engine](https://docs.docker.com/engine/) or [Docker desktop]
 
 ### Setup database connections
 
-Databases must be running on the same Docker network as the program. To do this locally, each container running a PostgreSQL database must be started using the same docker
-network. 
+Databases running in other docker containers must be on the same Docker network as the program. To do this locally, each container running a PostgreSQL database must be started using the same docker network. 
 
 **Create network**
 
