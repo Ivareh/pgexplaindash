@@ -5,7 +5,7 @@ from typing import Any
 import pandas as pd
 from logs.logger import db_logger, explain_logger
 from pydantic import BaseModel, PostgresDsn
-from sqlalchemy import Engine, TextClause, create_engine
+from sqlalchemy import Engine, TextClause, create_engine, engine
 from utils import log_key_value
 
 DATABASES_SAVES_CSV = Path("app/saves/databases.csv")
@@ -126,15 +126,22 @@ def load_database_instances() -> pd.DataFrame:
     return saves_df
 
 
+def hide_password_url(db_url: str) -> str:
+    url = engine.make_url(db_url)
+    return url.render_as_string(hide_password=True)
+
+
 def process_databases(databases: pd.DataFrame) -> None:
     for _, row in databases.iterrows():
         db_name = row["name"]
         db_description = row["description"]
         db_url = row["url"]
 
+        hided_url = hide_password_url(str(db_url))
+
         log_key_value(
             db_logger,
-            {"db_name": db_name, "db_description": db_description, "db_url": db_url},
+            {"db_name": db_name, "db_description": db_description, "db_url": hided_url},
         )
 
 
