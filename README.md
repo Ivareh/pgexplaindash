@@ -1,4 +1,4 @@
-# pg-explain-optimize-dashboard
+# pgexplaindash
 
 ![pgdashmerged_cropped](https://github.com/user-attachments/assets/b6a6a156-fd4b-4169-9ccf-c1b7bad570a9)
 
