@@ -454,6 +454,38 @@
             "regex": "^detail__(.*)$",
             "renamePattern": "$1"
           }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "destinationType": "number",
+                "targetField": "timing_ms"
+              },
+              {
+                "destinationType": "number",
+                "targetField": "timing_pct"
+              },
+              {
+                "destinationType": "number",
+                "targetField": "Actual Rows"
+              },
+              {
+                "destinationType": "number",
+                "targetField": "Total Cost"
+              },
+              {
+                "destinationType": "number",
+                "targetField": "Actual Total Time"
+              },
+              {
+                "destinationType": "number",
+                "targetField": "Actual Startup Time"
+              }
+            ],
+            "fields": {}
+          }
         }
       ],
       "type": "table"
@@ -869,8 +901,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1050,13 +1081,13 @@
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-72h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "TESTING Explain Analyze Logs",
   "uid": "d09b90a5-7749-42b0-b7e1-21274614203f",
-  "version": 15,
+  "version": 1,
   "weekStart": ""
 }

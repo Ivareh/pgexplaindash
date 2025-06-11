@@ -255,6 +255,38 @@ export function perQueryMetricScene() {
           renamePattern: '$1',
         },
       },
+      {
+        id: 'convertFieldType',
+        options: {
+          conversions: [
+            {
+              destinationType: 'number',
+              targetField: 'timing_ms',
+            },
+            {
+              destinationType: 'number',
+              targetField: 'timing_pct',
+            },
+            {
+              destinationType: 'number',
+              targetField: 'Actual Rows',
+            },
+            {
+              destinationType: 'number',
+              targetField: 'Total Cost',
+            },
+            {
+              destinationType: 'number',
+              targetField: 'Actual Total Time',
+            },
+            {
+              destinationType: 'number',
+              targetField: 'Actual Startup Time',
+            },
+          ],
+          fields: {},
+        },
+      },
     ],
   });
 
