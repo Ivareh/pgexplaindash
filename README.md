@@ -1,6 +1,9 @@
 # pgexplaindash
 
-![pgdashmerged_cropped](https://github.com/user-attachments/assets/b6a6a156-fd4b-4169-9ccf-c1b7bad570a9)
+Showcase video:
+
+https://github.com/user-attachments/assets/7bedbe31-1c47-41b4-a729-3305459ea6b7
+
 
 
 Integrated application using Python, Grafana, Vector and Loki to store explain analyze query results
