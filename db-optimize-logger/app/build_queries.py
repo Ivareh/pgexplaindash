@@ -477,6 +477,11 @@ def _save_all_queries_callback(sender) -> None:
                 )
 
 
+def delete_db_id_callback(index: int, query_tag: str) -> None:
+    dpg.delete_item(f"query_database_id_{index}_{query_tag}")
+    dpg.delete_item(f"query_delete_db_{index}_{query_tag}")
+
+
 def _add_db_id_callback(
     *,
     next_db_index: int,  # Capture next index at creation time
@@ -496,13 +501,12 @@ def _add_db_id_callback(
         width=450,
     )
 
-    def delete_callback(index):
-        dpg.delete_item(f"query_database_id_{index}_{query_tag}")
-        dpg.delete_item(f"query_delete_db_{index}_{query_tag}")
-
     dpg.add_button(
         label="Delete database id",
-        callback=lambda _: delete_callback(next_db_index),
+        callback=lambda _: delete_db_id_callback(
+            next_db_index,
+            query_tag,
+        ),
         parent=group_tag,
         before=before_position,
         tag=f"query_delete_db_{next_db_index}_{query_tag}",
@@ -539,14 +543,6 @@ def add_query(
     group_tag = f"query_group_{query_tag}"
 
     with dpg.group(tag=group_tag, parent="queries"):
-        for db_index, db_id in enumerate(defaults["database_ids"], start=1):
-            dpg.add_input_text(
-                label=f"Database ID {db_index}",
-                tag=f"query_database_id_{db_index}_{query_tag}",
-                default_value=db_id,
-                width=450,
-            )
-
         name_tag = f"query_name_{query_tag}"
         dpg.add_input_text(
             label="Query name",
@@ -556,6 +552,25 @@ def add_query(
             height=20,
             multiline=True,
         )
+        for db_index, db_id in enumerate(defaults["database_ids"], start=1):
+            dpg.add_input_text(
+                label=f"Database ID {db_index}",
+                tag=f"query_database_id_{db_index}_{query_tag}",
+                default_value=db_id,
+                width=450,
+                before=name_tag,
+            )
+            if db_index != 1:
+                dpg.add_button(
+                    label="Delete database id",
+                    callback=lambda _: delete_db_id_callback(
+                        index=db_index,  # noqa: B023
+                        query_tag=query_tag,
+                    ),
+                    parent=group_tag,
+                    before=name_tag,
+                    tag=f"query_delete_db_{db_index}_{query_tag}",
+                )
 
         dpg.add_button(
             label="Add database id",
