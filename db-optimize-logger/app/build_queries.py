@@ -332,17 +332,20 @@ def load_queries() -> None:
 
     def process_query(query_row):
         id = query_row.id
-        database_id = query_row.db_instance_id
+        database_ids = (
+            query_row.db_instance_ids[1:-1].replace("'", "").split(", ")
+        )  # Parses list format
         name = query_row["name"]
         sql = query_row.sql
         add_query(
             default_tag=id,
-            default_database_id=database_id,
+            default_database_ids=database_ids,
             default_name=name,
             default_sql=sql,
         )
         try:
-            find_db_instance(database_id)
+            for db_id in database_ids:
+                find_db_instance(db_id)
         except ValueError as e:
             dpg.delete_item(f"query_separator_{id}")
             dpg.add_text(
@@ -362,32 +365,49 @@ def load_queries() -> None:
 
 def save_query(
     id: str,
-    database_id: str,
+    database_ids: list[str],
     name: str,
     sql: str,
 ) -> None:
-    db_instance = find_db_instance(database_id)
-    db_query = DatabaseQuery(id=id, db_instance=db_instance, name=name, sql=sql)
+    db_instances: list[DatabaseInstance] = []
+    for db_id in database_ids:
+        db_instances.append(find_db_instance(db_id))
+    db_query = DatabaseQuery(id=id, db_instances=db_instances, name=name, sql=sql)
     save_database_query(db_query)
 
 
-def _save_query_callback(sender, app_data, user_data):
+def _save_query_callback(sender, app_data, user_data, group_tag):
     """
     Callback which gets query values from input fields and saves them in save file.
 
     sender    = the Save button’s tag
     app_data  = None (for a button click)
-    user_data = the unique database_tag string
+    user_data = the unique query_tag string
     """
     tag = user_data
 
-    database_id = dpg.get_value(f"query_database_id_{tag}")
+    children = dpg.get_item_children(group_tag)
+    assert isinstance(children, dict)
+    db_children = []
+    if children:
+        for child_list in children.values():
+            for child in child_list:
+                child = dpg.get_item_alias(child)
+                if isinstance(child, str) and child.startswith("query_database_id_"):
+                    db_children.append(child)
+                else:
+                    continue
+
+    database_ids = []
+    for db_child in db_children:
+        database_ids.append(dpg.get_value(db_child))
+
     name = dpg.get_value(f"query_name_{tag}")
     sql = dpg.get_value(f"query_sql_{tag}")
 
     error_value = dpg.get_value(f"query_save_error_{tag}")
     try:
-        save_query(tag, database_id, name, sql)
+        save_query(tag, database_ids, name, sql)
         dpg.set_item_label(sender, "Saved!")
         if error_value:
             dpg.delete_item(f"query_save_error_{tag}")
@@ -419,14 +439,24 @@ def _save_all_queries_callback(sender) -> None:
             if isinstance(child_tag, str) and child_tag.startswith("query_name_"):
                 suffix = child_tag[len("query_name_") :]
                 tags.add(suffix)
+            else:
+                continue
 
     for tag in tags:
-        database_id = dpg.get_value(f"query_database_id_{tag}")
+        database_ids = []
+
+        index = 1
+        while True:
+            db_id = dpg.get_value(f"query_database_id_{index}_{tag}")
+            if not db_id:
+                break
+            database_ids.append(db_id)
+            index += 1
         name = dpg.get_value(f"query_name_{tag}")
         sql = dpg.get_value(f"query_sql_{tag}")
 
         try:
-            save_query(id=tag, database_id=database_id, name=name, sql=sql)
+            save_query(id=tag, database_ids=database_ids, name=name, sql=sql)
             dpg.set_item_label(sender, "Saved!")
             if dpg.get_value(f"query_save_error_{tag}"):
                 dpg.delete_item(f"query_save_error_{tag}")
@@ -447,40 +477,128 @@ def _save_all_queries_callback(sender) -> None:
                 )
 
 
+def delete_db_id_callback(index: int, query_tag: str) -> None:
+    dpg.delete_item(f"query_database_id_{index}_{query_tag}")
+    dpg.delete_item(f"query_delete_db_{index}_{query_tag}")
+
+
+def _add_db_id_callback(
+    *,
+    next_db_index: int,  # Capture next index at creation time
+    before_position: int | str,
+    query_tag: str,
+    group_tag: str,
+    sender: int | str | None = None,  # Handle button deletion
+) -> None:
+    if sender:
+        dpg.delete_item(sender)
+
+    dpg.add_input_text(
+        label=f"Database ID {next_db_index}",
+        parent=group_tag,
+        before=before_position,
+        tag=f"query_database_id_{next_db_index}_{query_tag}",
+        width=450,
+    )
+
+    dpg.add_button(
+        label="Delete database id",
+        callback=lambda _: delete_db_id_callback(
+            next_db_index,
+            query_tag,
+        ),
+        parent=group_tag,
+        before=before_position,
+        tag=f"query_delete_db_{next_db_index}_{query_tag}",
+    )
+
+    def create_callback(index):
+        return lambda s: _add_db_id_callback(
+            next_db_index=index + 1,
+            before_position=before_position,
+            query_tag=query_tag,
+            group_tag=group_tag,
+            sender=s,
+        )
+
+    dpg.add_button(
+        label="Add database id",
+        callback=create_callback(next_db_index),
+        before=before_position,
+    )
+
+
 def add_query(
     default_tag: str | None = None,
-    default_database_id: str | None = None,
+    default_database_ids: list[str] | None = None,
     default_name: str | None = None,
     default_sql: str | None = None,
 ):
-    """Adds query items with optional default values and displays them in ui."""
-
     defaults = {
-        "database_id": default_database_id or "",
+        "database_ids": default_database_ids or [""],
         "name": default_name or "",
         "sql": default_sql or "",
     }
     query_tag = default_tag or str(uuid.uuid4())
     group_tag = f"query_group_{query_tag}"
+
     with dpg.group(tag=group_tag, parent="queries"):
-        input_text_fields = [
-            ("database_id", "Database instance id", 20),
-            ("name", "Query name", 20),
-            ("sql", "Statement", 300),
-        ]
-        for field_name, label, height in input_text_fields:
+        name_tag = f"query_name_{query_tag}"
+        dpg.add_input_text(
+            label="Query name",
+            tag=name_tag,
+            default_value=defaults["name"],
+            width=750,
+            height=20,
+            multiline=True,
+        )
+        for db_index, db_id in enumerate(defaults["database_ids"], start=1):
             dpg.add_input_text(
-                label=label,
-                tag=f"query_{field_name}_{query_tag}",
-                default_value=defaults[field_name],
-                height=height,
-                width=750,
-                multiline=True,
+                label=f"Database ID {db_index}",
+                tag=f"query_database_id_{db_index}_{query_tag}",
+                default_value=db_id,
+                width=450,
+                before=name_tag,
             )
+            if db_index != 1:
+                dpg.add_button(
+                    label="Delete database id",
+                    callback=lambda _: delete_db_id_callback(
+                        index=db_index,  # noqa: B023
+                        query_tag=query_tag,
+                    ),
+                    parent=group_tag,
+                    before=name_tag,
+                    tag=f"query_delete_db_{db_index}_{query_tag}",
+                )
+
+        dpg.add_button(
+            label="Add database id",
+            callback=lambda s: _add_db_id_callback(
+                next_db_index=len(defaults["database_ids"]) + 1,
+                before_position=name_tag,
+                query_tag=query_tag,
+                group_tag=group_tag,
+                sender=s,
+            ),
+            before=name_tag,
+        )
+
+        dpg.add_input_text(
+            label="Statement",
+            tag=f"query_sql_{query_tag}",
+            default_value=defaults["sql"],
+            height=300,
+            width=750,
+            multiline=True,
+        )
+
         dpg.add_button(
             label="Save Query",
             user_data=query_tag,
-            callback=_save_query_callback,
+            callback=lambda sender, app_data, user_data: _save_query_callback(
+                sender, app_data, user_data, group_tag
+            ),
             tag=f"save_query_{query_tag}",
         )
 
