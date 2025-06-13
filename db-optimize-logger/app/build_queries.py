@@ -384,6 +384,7 @@ def _save_query_callback(sender, app_data, user_data, group_tag):
     app_data  = None (for a button click)
     user_data = the unique query_tag string
     """
+    dpg.set_item_label(sender, "Saved!")
     tag = user_data
 
     children = dpg.get_item_children(group_tag)
@@ -408,7 +409,6 @@ def _save_query_callback(sender, app_data, user_data, group_tag):
     error_value = dpg.get_value(f"query_save_error_{tag}")
     try:
         save_query(tag, database_ids, name, sql)
-        dpg.set_item_label(sender, "Saved!")
         if error_value:
             dpg.delete_item(f"query_save_error_{tag}")
     except Exception as e:
@@ -429,52 +429,56 @@ def _save_query_callback(sender, app_data, user_data, group_tag):
 
 
 def _save_all_queries_callback(sender) -> None:
+    dpg.set_item_label(sender, "Saved!")
     groups = dpg.get_item_children("queries", slot=1) or []
 
-    tags = set()
+    group_tags = []
     for grp in groups:
+        group_tag = {"group": grp, "tags": []}
         children = dpg.get_item_children(grp, slot=1) or []
         for child_id in children:
             child_tag = dpg.get_item_alias(child_id)
             if isinstance(child_tag, str) and child_tag.startswith("query_name_"):
                 suffix = child_tag[len("query_name_") :]
-                tags.add(suffix)
+                group_tag["tags"].append(suffix)
             else:
                 continue
 
-    for tag in tags:
-        database_ids = []
+        group_tags.append(group_tag)
 
-        index = 1
-        while True:
-            db_id = dpg.get_value(f"query_database_id_{index}_{tag}")
-            if not db_id:
-                break
-            database_ids.append(db_id)
-            index += 1
-        name = dpg.get_value(f"query_name_{tag}")
-        sql = dpg.get_value(f"query_sql_{tag}")
+    for group_tag in group_tags:
+        for tag in group_tag["tags"]:
+            database_ids = []
 
-        try:
-            save_query(id=tag, database_ids=database_ids, name=name, sql=sql)
-            dpg.set_item_label(sender, "Saved!")
-            if dpg.get_value(f"query_save_error_{tag}"):
-                dpg.delete_item(f"query_save_error_{tag}")
-        except Exception as e:
-            dpg.set_item_label(sender, "Save All Queries")
-            if not dpg.get_value(f"query_save_error_{tag}"):
-                dpg.delete_item(f"query_separator_{tag}")
-                dpg.add_text(
-                    default_value=f"Something went wrong saving query:{tag}\nexception:\n{e}",
-                    color=[255, 0, 0],
-                    parent="queries",
-                    tag=f"query_save_error_{tag}",
-                )
-                dpg.add_text(
-                    default_value="-" * 50,
-                    parent="queries",
-                    tag=f"query_separator_{tag}",
-                )
+            index = 1
+            while True:
+                db_id = dpg.get_value(f"query_database_id_{index}_{tag}")
+                if db_id is None:
+                    break
+                database_ids.append(db_id)
+                index += 1
+            name = dpg.get_value(f"query_name_{tag}")
+            sql = dpg.get_value(f"query_sql_{tag}")
+
+            try:
+                save_query(id=tag, database_ids=database_ids, name=name, sql=sql)
+                if dpg.get_value(f"query_save_error_{tag}"):
+                    dpg.delete_item(f"query_save_error_{tag}")
+            except Exception as e:
+                dpg.set_item_label(sender, "Save All Queries")
+                if not dpg.get_value(f"query_save_error_{tag}"):
+                    dpg.delete_item(f"query_separator_{tag}")
+                    dpg.add_text(
+                        default_value=f"Something went wrong saving query:{tag}\nexception:\n{e}",
+                        color=[255, 0, 0],
+                        parent=group_tag["group"],
+                        tag=f"query_save_error_{tag}",
+                    )
+                    dpg.add_text(
+                        default_value="-" * 50,
+                        parent=group_tag["group"],
+                        tag=f"query_separator_{tag}",
+                    )
 
 
 def delete_db_id_callback(index: int, query_tag: str) -> None:
