@@ -3,10 +3,11 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from logs.logger import db_logger, explain_logger
 from pydantic import BaseModel, PostgresDsn
 from sqlalchemy import Engine, TextClause, create_engine, engine
-from utils import log_key_value
+
+from app.logs.logger import db_logger, explain_logger
+from app.utils import log_key_value
 
 DATABASES_SAVES_CSV = Path("app/saves/databases.csv")
 
@@ -114,7 +115,7 @@ class NoDatabasesFoundError(Exception):
         super().__init__(detail, args)
 
 
-def load_database_instances() -> pd.DataFrame:
+def read_database_instances() -> pd.DataFrame:
     try:
         saves_df = pd.read_csv(DATABASES_SAVES_CSV)
     except FileNotFoundError:
@@ -124,6 +125,12 @@ def load_database_instances() -> pd.DataFrame:
         raise NoDatabasesFoundError
 
     return saves_df
+
+
+def read_database_ids() -> list[str]:
+    database_instances = read_database_instances()
+
+    return list(database_instances["id"])
 
 
 def hide_password_url(db_url: str) -> str:

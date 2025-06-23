@@ -2,13 +2,14 @@ import uuid
 from typing import Any
 
 import pandas as pd
-from interface import (
+
+from app.interface import (
     NodeEnum as NE,
 )
-from interface import (
+from app.interface import (
     PlanEnum as PE,
 )
-from node_type_handlers import (
+from app.node_type_handlers import (
     NodeTypeService,
 )
 

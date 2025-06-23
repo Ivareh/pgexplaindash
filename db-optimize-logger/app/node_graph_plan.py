@@ -1,12 +1,13 @@
 import numpy as np
 import pandas as pd
-from interface import (
+
+from app.interface import (
     GrafanaEdgeEnum as GEE,
 )
-from interface import (
+from app.interface import (
     GrafanaNodeEnum as GNE,
 )
-from interface import (
+from app.interface import (
     NodeEnum,
 )
 
