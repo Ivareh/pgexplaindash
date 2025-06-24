@@ -35,7 +35,7 @@ def notify_popup(
 def ui_int_input(
     *,
     label: str,
-    value: int | float,
+    value: int | float | None,
     attr_name: str,
     bind_object: Any,
     width_px: int,

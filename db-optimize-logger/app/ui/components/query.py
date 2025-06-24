@@ -1,17 +1,26 @@
+import warnings
 from typing import Any
 from uuid import uuid4
 
+import numpy as np
 import pandas as pd
 from nicegui import ui
 
-from app.db import find_db_instance, read_database_ids
+from app.db import (
+    NoDatabasesFoundError,
+    find_database_instance,
+    read_database_ids_list,
+    read_database_saves_df,
+)
+from app.interface import WarningEnum
 from app.query_handler import (
-    QUERIES_SAVES_CSV,
     DatabaseQuery,
     DatabaseQueryList,
+    NoQueriesFoundError,
     delete_all_queries,
     delete_database_query,
     parse_database_ids,
+    read_queries_saves_df,
     save_database_query,
 )
 from app.ui.components.common import (
@@ -22,7 +31,7 @@ from app.ui.components.common import (
 
 
 @ui.refreshable
-def saved_queries_ui(queries: DatabaseQueryList, databases: list[str]):
+def _saved_queries_ui(queries: DatabaseQueryList, databases: list[str]):
     if not queries.items:
         ui.label("Queries are empty.").classes("mx-auto")
         return
@@ -32,14 +41,22 @@ def saved_queries_ui(queries: DatabaseQueryList, databases: list[str]):
                 ui.input("Query name", value=query.name).classes(
                     "flex-grow w-full"
                 ).bind_value(query, "name")
-                ui.select(
-                    databases,
-                    label="Database ids",
-                    multiple=True,
-                    value=query.database_ids,
-                ).classes("flex-grow w-full").bind_value(query, "database_ids")._props(
-                    "use-chips"
-                )
+                with ui.row().classes("w-full"):
+                    display_dbs = databases.copy()
+                    for database_id in query.database_ids:
+                        if database_id not in databases:
+                            ui.label(
+                                f"Database id {database_id[:6]}... was not found"
+                            ).classes("my-auto text-red")
+                            display_dbs.append(database_id)
+                    ui.select(
+                        display_dbs,
+                        label="Database ids",
+                        multiple=True,
+                        value=query.database_ids,
+                    ).classes("flex-grow").bind_value(query, "database_ids")._props(
+                        "use-chips"
+                    )
                 with ui.row().classes("mx-auto items-stretch"):
                     ui_int_input(
                         label="Repeat",
@@ -57,7 +74,7 @@ def saved_queries_ui(queries: DatabaseQueryList, databases: list[str]):
             ).style("height: full").bind_value(query, "sql")
 
             ui.button(
-                on_click=lambda _, query=query: delete_query_handler(queries, query),
+                on_click=lambda _, query=query: _delete_query_handler(queries, query),
                 icon="delete",
             ).classes("mt-auto")
 
@@ -95,14 +112,14 @@ def _add_query_handler(
         add_name.value = ""
         add_database_ids.value = []
         add_sql.value = ""
-        add_repeat.value = 1
+        add_repeat.value = 0
         add_query_count.value = False
 
     except Exception as e:
         notify_popup(str(e), type="negative")
 
 
-def delete_query_handler(queries: DatabaseQueryList, query: DatabaseQuery) -> None:
+def _delete_query_handler(queries: DatabaseQueryList, query: DatabaseQuery) -> None:
     try:
         delete_database_query(query.id)
         queries.remove(query)
@@ -118,10 +135,18 @@ def _save_all_queries_handler(queries: DatabaseQueryList):
             # Validate fields
             DatabaseQuery(**query.model_dump())
 
+            for db_id in query.database_ids:
+                try:
+                    find_database_instance(db_id)
+                except Exception as e:
+                    notify_popup(str(e), type="negative")
+                    return
+
         delete_all_queries()
 
         for query in queries.items:
             save_database_query(query)
+        _saved_queries_ui.refresh()
         notify_popup("Successfully saved all queries", type="positive")
     except Exception as e:
         notify_popup(str(e), type="negative")
@@ -130,12 +155,14 @@ def _save_all_queries_handler(queries: DatabaseQueryList):
 
 def _ui_load_queries(queries: DatabaseQueryList):
     try:
-        saves_df = pd.read_csv(QUERIES_SAVES_CSV)
-    except FileNotFoundError:
-        print("Found no saved queries")
+        saves_df = read_queries_saves_df()
+
+        saves_df = saves_df.replace({np.nan: None, pd.NA: None, pd.NaT: None})
+
+    except NoQueriesFoundError:
         return
+
     if saves_df.empty:
-        print("Found no saved queries")
         return
 
     def process_query(query_row):
@@ -154,19 +181,25 @@ def _ui_load_queries(queries: DatabaseQueryList):
 
         try:
             for db_id in db_query_dict["database_ids"]:
-                find_db_instance(db_id)
-        except ValueError:
-            raise ValueError(
-                "Couldn't load queries in UI since database id wasn't found in saved databases file"
+                find_database_instance(db_id)
+        except NoDatabasesFoundError:
+            warnings.warn(
+                f"{WarningEnum.WARNING}Didn't find database id for query {db_query_dict['id'][:6]}_{db_query_dict['name'][:50]}{WarningEnum.RESET}",
+                stacklevel=2,
             )
 
-    saves_df = saves_df.apply(process_query, axis=1)
+    try:
+        saves_df = saves_df.apply(process_query, axis=1)
+    except Exception as e:
+        ui.label(str(e)).classes("text-red")
 
 
 def _add_queries_component(queries: DatabaseQueryList, databases: list[str]) -> None:
     "Loads component to add more queries with input"
 
-    with ui.card().classes("mt-10 w-full items-stretch overflow-hidden"):
+    with ui.card().classes(
+        "mt-10 w-full items-stretch overflow-hidden border border-gray"
+    ):
         with ui.element("div").classes(
             "fixed top-0 right-12 z-[9999] p-4 flex items-center"
         ):
@@ -177,8 +210,8 @@ def _add_queries_component(queries: DatabaseQueryList, databases: list[str]) -> 
 
         ui.label().bind_text_from(queries, "title").classes("text-semibold text-2xl")
         add_query_name = create_field_with_tooltip(
-            "Query name to help identify the query",
-            lambda: ui.input("Query name"),
+            "Query name to help identify the query (can be anything)",
+            lambda: ui.input("Query name")._props('autocomplete="off"'),
         )
 
         add_database_ids = create_field_with_tooltip(
@@ -188,10 +221,10 @@ def _add_queries_component(queries: DatabaseQueryList, databases: list[str]) -> 
             ),
         )
 
-        with ui.row().classes("mx-auto items-stretch"):
+        with ui.row().classes("mx-auto items-stretch mt-8"):
             add_repeat = create_field_with_tooltip(
-                "Times to repeat the query (for each database specified)",
-                lambda: ui.number("Repeat", value=1).classes("w-[160Bpx]"),
+                "Times to repeat the query (for each database specified). Compare multiple executes",
+                lambda: ui.number("Repeat").classes("w-[160Bpx]"),
             )
             add_query_count = create_field_with_tooltip(
                 "(NB! Only for `SELECT` queries): Whether to perform an additional COUNT(*) query to check how many rows the execute returns",
@@ -224,13 +257,50 @@ def _saved_queries_component(
 
     ui.label("Saved queries").classes("text-semibold text-2xl mt-10")
     with ui.grid(columns=2).classes("w-full mx-auto"):
-        saved_queries_ui(queries, database_ids)
+        _saved_queries_ui(queries, database_ids)
         _ui_load_queries(queries)
     ui.space().classes("h-20")
 
 
+def _databases_help_table() -> None:
+    "Helper table to see which database to choose while creating queries"
+    try:
+        db_saves_df = read_database_saves_df()
+    except NoDatabasesFoundError:
+        ui.label("Warning: Please add databases before adding queries").classes(
+            "text-yellow text-xl"
+        )
+        return
+
+    db_saves_df.replace(pd.NaT, "")
+
+    columns = [
+        {
+            "name": col,
+            "label": col,
+            "field": col,
+            "align": "left",
+            "classes": "whitespace-normal break-words",
+        }
+        for col in db_saves_df.columns
+    ]
+
+    rows = db_saves_df.to_dict(orient="records")
+
+    table = ui.table(
+        title="Saved databases",
+        columns=columns,
+        rows=rows,
+    ).classes("border border-gray w-full rounded")
+
+    # 5) If you still want a custom “top-left” slot:
+    with table.add_slot("top-left"):
+        ui.label("Saved databases").classes("text-lg")
+
+
 def queries_component() -> None:
-    queries = DatabaseQueryList("Add queries", on_change=saved_queries_ui.refresh)
-    database_ids = read_database_ids()
+    queries = DatabaseQueryList("Add queries", on_change=_saved_queries_ui.refresh)
+    _databases_help_table()
+    database_ids = read_database_ids_list()
     _add_queries_component(queries, database_ids)
     _saved_queries_component(queries, database_ids)

@@ -1,5 +1,6 @@
 from nicegui import ui
 
+from app.ui.components.database import databases_component
 from app.ui.components.query import (
     queries_component,
 )
@@ -28,6 +29,8 @@ def main_page():
 def databases_page():
     ui.dark_mode(value=True)
     show_toolbar()
+
+    databases_component()
 
 
 @ui.page("/queries")
