@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import TextClause, text
 
 from app.core.interface import PlanEnum
-from app.core.progress import Progress
 from app.core.utils import log_key_value
 from app.execute.database import (
     DatabaseInstance,
@@ -154,12 +153,8 @@ def save_query(query: Query) -> None:
     saves_df.to_csv(QUERIES_SAVES_CSV, index=False)
 
 
-def process_queries(queries: pd.DataFrame, progress: Progress) -> None:
-    total = len(queries)
+def process_queries(queries: pd.DataFrame) -> None:
     for index, (_, row) in enumerate(queries.iterrows(), start=1):
-        p = index / total
-        progress.set_progress(p)
-
         database_ids = parse_database_ids(row.database_ids)
         db_instances: list[DatabaseInstance] = []
         for db_id in database_ids:
