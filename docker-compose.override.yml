@@ -11,6 +11,7 @@ services:
           target: /app
           ignore:
             - ./db-optimize-logger/.venv
+            - ./db-optimize-logger/uv.lock
             - .venv
         - path: ./db-optimize-logger/pyproject.toml
           action: rebuild

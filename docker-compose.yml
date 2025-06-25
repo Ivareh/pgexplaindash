@@ -1,9 +1,36 @@
 services:
+  proxy:
+    container_name: dol-proxy
+    image: traefik:v3.0
+    networks:
+      - external-network  # Connect to app network
+    volumes:
+      - ${OPTIONAL_DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
+    ports:
+      - "80:80"
+      - "8090:8080"
+    command:
+      - --providers.docker
+      - --providers.docker.constraints=Label(`traefik.constraint-label`, `external-network`)
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.http.address=:80
+      - --entrypoints.https.address=:443
+      - --accesslog
+      - --log
+      - --log.level=DEBUG
+      - --api
+      - --api.insecure=true
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label=external-network
+
   db-optimize-logger:
     container_name: dol
     image: dol
     env_file:
       - .env
+    environment:
+      - LOKI_CONFIG_HOST_PATH=${PWD}/loki.yaml
     build:
       context: ./db-optimize-logger
       args:
@@ -14,7 +41,17 @@ services:
       - ./file/explain_output:/app/file/explain_output
       - ./file/graphs_output:/app/file/graphs_output
       - ./db-optimize-logger/:/app
-
+      - ${OPTIONAL_DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=external-network
+      - traefik.constraint-label=external-network
+      - traefik.http.services.dol.loadbalancer.server.port=8080
+      - traefik.http.routers.dol-http.rule=Host(`dol.localhost`)
+      - traefik.http.routers.dol-http.entrypoints=http
+      - traefik.http.routers.dol-https.rule=Host(`dol.localhost`)
+      - traefik.http.routers.dol-https.entrypoints=https
+      - traefik.http.routers.dol-https.tls=true
 
   vector:
     container_name: dol-vector
@@ -30,24 +67,7 @@ services:
       - ./file:/var/log/
       - ./vector/vector.yaml:/etc/vector/vector.yaml:ro
       - ./vector/transformers:/etc/vector/transformers:ro
-      - /run/user/1000/docker.sock:/var/run/docker.sock
-
-
-  loki:
-    container_name: dol-loki
-    image: grafana/loki:main
-    restart: "no"
-    ports:
-      - "3100:3100"
-    env_file:
-      - .env
-    networks:
-      - external-network
-    volumes:
-      - ./loki.yaml:/etc/loki/local-config.yaml
-      - loki-data:/var/lib/loki
-    command: -config.file=/etc/loki/local-config.yaml
-
+      - ${OPTIONAL_DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
 
   grafana:
     extends:
@@ -56,11 +76,10 @@ services:
     networks:
       - external-network
 
-
 volumes:
-  grafana-data:
+  dolgrafana-data:
     name: "dol-grafana-data"
-  loki-data:
+  dol-loki-data:
     name: "dol-loki-data"
 
 networks:
