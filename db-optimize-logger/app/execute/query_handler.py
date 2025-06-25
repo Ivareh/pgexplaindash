@@ -22,7 +22,7 @@ from app.execute.node_graph_plan import (
     create_node_metrics_df,
 )
 from app.execute.node_process import extract_node_series, process_explain_df
-from app.logs.logger import explain_logger, graph_node_logger
+from app.logs.logger import app_logger, explain_logger, graph_node_logger
 
 QUERIES_SAVES_CSV = Path("app/saves/queries.csv")
 
@@ -129,7 +129,7 @@ def delete_all_queries() -> None:
     try:
         os.remove(QUERIES_SAVES_CSV)
     except FileNotFoundError:
-        print("All queries are already deleted")
+        app_logger.info("All queries are already deleted")
 
 
 def save_query(query: Query) -> None:

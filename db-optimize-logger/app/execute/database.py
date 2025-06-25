@@ -11,7 +11,7 @@ from pydantic_core import MultiHostHost
 from sqlalchemy import Engine, TextClause, create_engine, engine
 
 from app.core.utils import log_key_value
-from app.logs.logger import db_logger, explain_logger
+from app.logs.logger import app_logger, db_logger, explain_logger
 
 DATABASES_SAVES_CSV = Path("app/saves/databases.csv")
 
@@ -132,7 +132,7 @@ def delete_all_databases() -> None:
     try:
         os.remove(DATABASES_SAVES_CSV)
     except FileNotFoundError:
-        print("All databases already deleted")
+        app_logger.info("All databases already deleted")
 
 
 def save_database_instance(database_instance: DatabaseInstance) -> None:
