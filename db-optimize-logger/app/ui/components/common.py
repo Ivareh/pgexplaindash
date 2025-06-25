@@ -3,6 +3,8 @@ from typing import Any, Literal
 from nicegui import ui
 from nicegui.elements.number import Number
 
+from app.logs.logger import app_logger
+
 
 def create_field_with_tooltip(tooltip_text, widget_factory):
     "Helper to create an inline field with tooltip"
@@ -30,6 +32,25 @@ def notify_popup(
         position="bottom-right",
         timeout=5000,  # milliseconds before auto-dismissal
     )
+
+
+def notify_and_log(
+    msg, msg_type: Literal["positive", "negative", "warning", "info", "ongoing"]
+) -> None:
+    "Both notifies in UI and logs the message"
+    match msg_type:
+        case "positive":
+            app_logger.info(msg)
+        case "negative":
+            app_logger.error(msg)
+        case "warning":
+            app_logger.warning(msg)
+        case "info":
+            app_logger.info(msg)
+        case "ongoing":
+            app_logger.info(msg)
+
+    notify_popup(msg, msg_type)
 
 
 def ui_int_input(

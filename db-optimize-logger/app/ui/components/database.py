@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from nicegui import ui
 
-from app.db import (
+from app.execute.database import (
     DatabaseInstance,
     ExplodedURLDBInstance,
     ExplodedURLDBInstanceList,
@@ -177,7 +177,9 @@ def _save_all_databases_handler(database_instances: ExplodedURLDBInstanceList):
 def _add_databases_component(database_instances: ExplodedURLDBInstanceList) -> None:
     "Loads component to add more databases with input"
 
-    with ui.card().classes("mt-10 w-full items-stretch overflow-hidden"):
+    with ui.card().classes(
+        "mt-10 w-full items-stretch overflow-hidden border border-gray"
+    ):
         with ui.element("div").classes(
             "fixed top-0 right-12 z-[9999] p-4 flex items-center"
         ):

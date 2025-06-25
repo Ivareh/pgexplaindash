@@ -6,22 +6,22 @@ import numpy as np
 import pandas as pd
 from nicegui import ui
 
-from app.db import (
+from app.core.interface import WarningEnum
+from app.execute.database import (
     NoDatabasesFoundError,
     find_database_instance,
     read_database_ids_list,
     read_database_saves_df,
 )
-from app.interface import WarningEnum
-from app.query_handler import (
-    DatabaseQuery,
-    DatabaseQueryList,
+from app.execute.query_handler import (
     NoQueriesFoundError,
+    Query,
+    QueryList,
     delete_all_queries,
-    delete_database_query,
+    delete_query,
     parse_database_ids,
     read_queries_saves_df,
-    save_database_query,
+    save_query,
 )
 from app.ui.components.common import (
     create_field_with_tooltip,
@@ -31,7 +31,7 @@ from app.ui.components.common import (
 
 
 @ui.refreshable
-def _saved_queries_ui(queries: DatabaseQueryList, databases: list[str]):
+def _saved_queries_ui(queries: QueryList, databases: list[str]):
     if not queries.items:
         ui.label("Queries are empty.").classes("mx-auto")
         return
@@ -80,7 +80,7 @@ def _saved_queries_ui(queries: DatabaseQueryList, databases: list[str]):
 
 
 def _add_query_handler(
-    queries: DatabaseQueryList,
+    queries: QueryList,
     *,
     add_name: Any,
     add_database_ids: Any,
@@ -93,7 +93,7 @@ def _add_query_handler(
     query_id = str(uuid4())
 
     try:
-        db_query = DatabaseQuery(
+        db_query = Query(
             id=query_id,
             name=add_name.value,
             database_ids=add_database_ids.value,
@@ -103,7 +103,7 @@ def _add_query_handler(
         )
 
         # Save in csv and add to UI
-        save_database_query(db_query)
+        save_query(db_query)
         queries.add(db_query)
 
         notify_popup(f"Added and saved query `{add_name.value}`", type="positive")
@@ -119,9 +119,9 @@ def _add_query_handler(
         notify_popup(str(e), type="negative")
 
 
-def _delete_query_handler(queries: DatabaseQueryList, query: DatabaseQuery) -> None:
+def _delete_query_handler(queries: QueryList, query: Query) -> None:
     try:
-        delete_database_query(query.id)
+        delete_query(query.id)
         queries.remove(query)
         notify_popup(f"Successfully deleted query `{query.name}`", "positive")
     except Exception as e:
@@ -129,11 +129,11 @@ def _delete_query_handler(queries: DatabaseQueryList, query: DatabaseQuery) -> N
         return
 
 
-def _save_all_queries_handler(queries: DatabaseQueryList):
+def _save_all_queries_handler(queries: QueryList):
     try:
         for query in queries.items:
             # Validate fields
-            DatabaseQuery(**query.model_dump())
+            Query(**query.model_dump())
 
             for db_id in query.database_ids:
                 try:
@@ -145,7 +145,7 @@ def _save_all_queries_handler(queries: DatabaseQueryList):
         delete_all_queries()
 
         for query in queries.items:
-            save_database_query(query)
+            save_query(query)
         _saved_queries_ui.refresh()
         notify_popup("Successfully saved all queries", type="positive")
     except Exception as e:
@@ -153,7 +153,7 @@ def _save_all_queries_handler(queries: DatabaseQueryList):
         return
 
 
-def _ui_load_queries(queries: DatabaseQueryList):
+def _ui_load_queries(queries: QueryList):
     try:
         saves_df = read_queries_saves_df()
 
@@ -176,7 +176,7 @@ def _ui_load_queries(queries: DatabaseQueryList):
             "repeat": query_row["repeat"],
             "query_count": bool(query_row["query_count"]),
         }
-        db_query = DatabaseQuery(**db_query_dict)
+        db_query = Query(**db_query_dict)
         queries.add(db_query)
 
         try:
@@ -194,7 +194,7 @@ def _ui_load_queries(queries: DatabaseQueryList):
         ui.label(str(e)).classes("text-red")
 
 
-def _add_queries_component(queries: DatabaseQueryList, databases: list[str]) -> None:
+def _add_queries_component(queries: QueryList, databases: list[str]) -> None:
     "Loads component to add more queries with input"
 
     with ui.card().classes(
@@ -250,9 +250,7 @@ def _add_queries_component(queries: DatabaseQueryList, databases: list[str]) -> 
         ).classes("mt-auto")
 
 
-def _saved_queries_component(
-    queries: DatabaseQueryList, database_ids: list[str]
-) -> None:
+def _saved_queries_component(queries: QueryList, database_ids: list[str]) -> None:
     "Loads component with a grid for all saved queries"
 
     ui.label("Saved queries").classes("text-semibold text-2xl mt-10")
@@ -299,7 +297,7 @@ def _databases_help_table() -> None:
 
 
 def queries_component() -> None:
-    queries = DatabaseQueryList("Add queries", on_change=_saved_queries_ui.refresh)
+    queries = QueryList("Add queries", on_change=_saved_queries_ui.refresh)
     _databases_help_table()
     database_ids = read_database_ids_list()
     _add_queries_component(queries, database_ids)

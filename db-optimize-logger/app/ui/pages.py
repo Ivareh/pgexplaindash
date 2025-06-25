@@ -1,6 +1,7 @@
 from nicegui import ui
 
 from app.ui.components.database import databases_component
+from app.ui.components.main import main_component
 from app.ui.components.query import (
     queries_component,
 )
@@ -22,7 +23,7 @@ def main_page():
     ui.dark_mode(value=True)
     show_toolbar()
 
-    ui.label("HEY GUYS")
+    main_component()
 
 
 @ui.page("/databases")

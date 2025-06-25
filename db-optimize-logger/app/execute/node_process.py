@@ -3,13 +3,13 @@ from typing import Any
 
 import pandas as pd
 
-from app.interface import (
+from app.core.interface import (
     NodeEnum as NE,
 )
-from app.interface import (
+from app.core.interface import (
     PlanEnum as PE,
 )
-from app.node_type_handlers import (
+from app.execute.node_type_handlers import (
     NodeTypeService,
 )
 

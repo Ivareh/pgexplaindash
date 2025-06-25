@@ -5,7 +5,7 @@ formatters:
     format: "[%(name)s|%(levelname)s|%(module)s]: %(asctime)s: %(message)s"
     datefmt: "%Y-%m-%dT%H:%M:%S%z"
   explain_anal_json:
-    (): logs.config.JSONFormatter
+    (): app.logs.config.JSONFormatter
     fmt_keys:
       logger: name
       level: levelname
@@ -35,6 +35,12 @@ handlers:
     maxBytes: 504857600 # 500 mb
     backupCount: 2
 loggers:
+  app_logger:
+    level: DEBUG
+    handlers:
+      - exp_anal_file
+      - stdout
+    propagate: no
   explain_logger:
     level: DEBUG
     handlers:
@@ -49,6 +55,12 @@ loggers:
     propagate: no
   graph_node_logger:
     level: INFO
+    handlers:
+      - exp_anal_file
+      - stdout
+    propagate: no
+  watchfiles.main:
+    level: WARNING
     handlers:
       - exp_anal_file
       - stdout

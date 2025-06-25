@@ -10,8 +10,8 @@ from pydantic import BaseModel, Field, PostgresDsn, field_validator
 from pydantic_core import MultiHostHost
 from sqlalchemy import Engine, TextClause, create_engine, engine
 
+from app.core.utils import log_key_value
 from app.logs.logger import db_logger, explain_logger
-from app.utils import log_key_value
 
 DATABASES_SAVES_CSV = Path("app/saves/databases.csv")
 
@@ -100,6 +100,8 @@ def read_database_saves_df() -> pd.DataFrame:
 
 
 def find_database_instance(id: str) -> DatabaseInstance:
+    "Uses database instance `id` to find corresponding in saves and return the instance"
+
     df = read_database_saves_df().replace({np.nan: None, pd.NA: None, pd.NaT: None})
     mask = df["id"] == id
     if not mask.any():
@@ -203,7 +205,6 @@ def process_databases(databases: pd.DataFrame) -> None:
         )
 
 
-# @sync_timing_tracker
 def execute_explain_stmt(
     database_instance: DatabaseInstance,
     statement: TextClause,
