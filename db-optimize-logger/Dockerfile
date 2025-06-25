@@ -37,4 +37,4 @@ COPY ./app /app/app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
 
-CMD ["uv", "run", "app/main.py"]
+CMD ["uv", "run", "app/ui_app.py"]
