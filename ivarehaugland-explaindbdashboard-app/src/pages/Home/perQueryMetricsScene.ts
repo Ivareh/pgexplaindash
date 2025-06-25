@@ -694,7 +694,6 @@ export function perQueryMetricScene() {
         new SceneFlexItem({
           width: 1130,
           minWidth: 400,
-          whiteSpace: 'pre !important',
           minHeight: 800,
           body: new VizPanel({
             $data: planRawData,
