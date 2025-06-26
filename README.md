@@ -14,6 +14,8 @@ the results interactively on the dashboard.
 
 Inspired by [pev2](https://github.com/dalibo/pev2). Please check out this amazing tool.
 
+Also thanks to [https://nicegui.io/](https://nicegui.io/) for the easy-to-setup UI.
+
 ## Requirements
 
  - Python
@@ -29,21 +31,6 @@ The python program uses the queries and databases saved to execute the explain q
 Python logging and vector picks up the logs from the docker container running the Python program. Vector sends
 it to Loki for storage, and Grafana queries Loki to display data in the dashboards.
 
-## Notes
-
-Keep in mind that this application only measures the elapsed time of SQL statements as they execute within the database engine itself. It does not account for any of the additional latencies and overhead you’ll encounter in a real‐world setting, including but not limited to:
-
-- Network latency between your application server and the database host
-
-- Client‐side processing, such as building and serializing the query or parsing and deserializing the result set
-
-- Driver and ORM overhead, including marshalling parameters, mapping rows to objects, and any client‐side caching
-
-- I/O contention on the database server (disk reads/writes, log flushing, buffer cache misses)
-
-- Resource throttling or CPU scheduling enforced by container orchestrators or hypervisors
-
-Because these factors can often dominate end‐to‐end response times, be sure to profile your full application stack—including the network path and client code—if you need an accurate measure of total latency.
 
 ## How to use
 
@@ -95,63 +82,54 @@ EXPLAIN (ANALYZE, FORMAT JSON) SELECT ... ;
 
 #### <a name="setup-instr"></a> Setup instructions
 
-1. Navigate to the project directory:
+1. Navigate to the grafana plugin directory and execute:
 
 ```bash
-cd `root`/db-optimize-logger
+cd `root`/ivarehaugland-explaindbdashboard-app
+
+npm install
+
+npm run dev
 ```
 
+Just close the program after `npm run dev`.
 
-**Option 1:** Using [uv](https://docs.astral.sh/uv/getting-started/installation/#installation-methods)
-
-
-```bash
-uv venv
-
-uv run app/build_queries.py
-```
-
-**Option 2:** Using pip:
-
-```bash
-pip install dearpygui pandas pydantic
-
-python app/build_queries.py`
-
-```
-
-After running either option:
-Add databases and queries, then save them.
-
-
-#### Run application and access the dashboard
-
-After adding queries and databases, you can run the rest of the application.
-
-The `start.sh` will delete any data from previous run and execute the queries, begin the pipeline and make the dashboard ready.
-
-
-**Fresh start** (deletes previous data)
-
-```bash
-chmod +x start.sh
-
-./start.sh
-```
-
-**Preserve Existing Data**
+2. Navigate to root, and run docker compose:
 
 ```bash
 docker compose up -d
 ```
 
+3. Go to [http://dol.localhost/](http://dol.localhost/) in your browser.
 
-Note: Query execution time depends on complexity. The dashboard will be available after processing.
+4. Add queries and databases, then save them.
+
+5. Run `START LOGS`
+
+6. If it ran successfully, go to [http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home](http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home)
+
+7. View the EXPLAIN ANALYZE log metrics
 
 
-#### Access Dashboard
-[http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home](http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home)
 
+#### Access URLs
+- UI for adding queries and databases: [http://dol.localhost](http://dol.localhost)
+- Grafana dashboard viewing log metrics: [http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home](http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home)
 
+## Notes
+
+Keep in mind that this application only measures the elapsed time of SQL statements as they execute within the database engine itself. It does not account for any of the additional latencies and overhead you’ll encounter in a real‐world setting, including but not limited to:
+
+- Network latency between your application server and the database host
+
+- Client‐side processing, such as building and serializing the query or parsing and deserializing the result set
+
+- Driver and ORM overhead, including marshalling parameters, mapping rows to objects, and any client‐side caching
+
+- I/O contention on the database server (disk reads/writes, log flushing, buffer cache misses)
+
+- Resource throttling or CPU scheduling enforced by container orchestrators or hypervisors
+
+Because these factors can often dominate end‐to‐end response times, be sure to profile your full application stack—including the network path and client code—if you need an accurate measure of total latency.
 
 
