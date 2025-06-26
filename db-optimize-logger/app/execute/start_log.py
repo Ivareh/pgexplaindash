@@ -8,10 +8,10 @@ from app.logs.logger import setup_logging
 
 async def start_log(progress: Progress):
     setup_logging()
+    await asyncio.sleep(0.1)  # Just for coroutine to trigger for load spinner
 
     databases = read_database_saves_df()
     process_databases(databases)
-    await asyncio.sleep(4)
 
     queries = read_queries_saves_df()
     process_queries(queries)
