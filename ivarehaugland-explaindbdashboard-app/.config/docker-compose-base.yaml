@@ -1,7 +1,7 @@
 services:
   grafana:
     user: root
-    container_name: 'dol-grafana'
+    container_name: dol-grafana
 
     build:
       context: .
@@ -24,4 +24,5 @@ services:
       GF_DATAPROXY_LOGGING: 1
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: ivarehaugland-explaindbdashboard-app
       GF_INSTALL_PLUGINS: pgillich-tree-panel  # Add this line
+
 

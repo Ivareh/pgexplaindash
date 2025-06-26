@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from interface import (
+from app.core.interface import (
     NodeEnum as NE,
 )
-from interface import (
+from app.core.interface import (
     NodeTypeEnum,
 )
 

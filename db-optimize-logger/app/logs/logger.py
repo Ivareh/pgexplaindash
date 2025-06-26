@@ -17,6 +17,12 @@ def setup_logging():
     logging.config.dictConfig(config)
 
 
-explain_logger = logging.getLogger("explain_logger")
-db_logger = logging.getLogger("db_logger")
-graph_node_logger = logging.getLogger("graph_node_logger")
+app_logger = logging.getLogger("app_logger")  # For general app use
+
+explain_logger = logging.getLogger(
+    "explain_logger"
+)  # Logs for explain analyze information
+
+db_logger = logging.getLogger("db_logger")  # Log database information
+
+graph_node_logger = logging.getLogger("graph_node_logger")  # Log graph node information

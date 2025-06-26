@@ -10,8 +10,6 @@ services:
           action: sync
           target: /app
           ignore:
-            - ./db-optimize-logger/.venv
-            - .venv
-        - path: ./db-optimize-logger/pyproject.toml
-          action: rebuild
+            - .venv/
+            - uv.lock
 

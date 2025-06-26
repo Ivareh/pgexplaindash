@@ -1,6 +1,9 @@
 from enum import StrEnum
 
-# Check out for Node Types: https://github.com/postgres/postgres/blob/master/src/backend/commands/explain.c#L137
+
+class WarningEnum(StrEnum):
+    WARNING = "\033[93m"
+    RESET = "\033[0m"
 
 
 class PlanEnum(StrEnum):
@@ -13,6 +16,7 @@ class PlanEnum(StrEnum):
     NODES = "nodes"
 
 
+# Check out for Node Types: https://github.com/postgres/postgres/blob/master/src/backend/commands/explain.c#L137
 class NodeEnum(StrEnum):
     # plan property keys
     NODE_TYPE = "Node Type"

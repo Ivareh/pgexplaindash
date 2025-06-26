@@ -4,7 +4,7 @@ from logging import Logger
 from time import perf_counter
 from typing import Any, ParamSpec, TypeVar
 
-from logs.logger import explain_logger
+from app.logs.logger import explain_logger
 
 Param = ParamSpec("Param")
 RetType = TypeVar("RetType")

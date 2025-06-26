@@ -1,77 +1,122 @@
 import os
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import pandas as pd
-from db import (
+from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import TextClause, text
+
+from app.core.interface import PlanEnum
+from app.core.utils import log_key_value
+from app.execute.database import (
     DatabaseInstance,
     execute_explain_stmt,
-    find_db_instance,
+    find_database_instance,
 )
-from interface import PlanEnum
-from logs.logger import explain_logger, graph_node_logger
-from node_graph_plan import (
+from app.execute.node_graph_plan import (
     create_graphedge_table,
     create_graphnode_table,
     create_level_divider,
     create_node_metrics_df,
 )
-from node_process import extract_node_series, process_explain_df
-from pydantic import BaseModel
-from sqlalchemy import TextClause, text
-from utils import log_key_value
+from app.execute.node_process import extract_node_series, process_explain_df
+from app.logs.logger import app_logger, explain_logger, graph_node_logger
 
 QUERIES_SAVES_CSV = Path("app/saves/queries.csv")
 
 
-class DatabaseQuery(BaseModel):
-    id: str  # UUID identifier
-    db_instances: list[DatabaseInstance]
-    name: str  # Recognizable id for user to keep track of queries
-    sql: str
+class Query(BaseModel):
+    id: str = Field(min_length=1)  # UUID identifier
+    name: str = Field(min_length=1)  # Recognizable id for user to keep track of queries
+    database_ids: list[str] = Field(min_length=1)
+    sql: str = Field(min_length=1)
+    repeat: int | None
+    query_count: bool
 
     @property
     def statement(self) -> TextClause:
         return text(self.sql)
 
+    @field_validator("repeat")
+    @classmethod
+    def convert_none(cls, v: int) -> int | None:
+        if v == 0:
+            return None
+        return v
 
-def find_database_query(id: str) -> DatabaseQuery:
-    """Checks and returns if db query with id specified exists in saves file.
 
-    Raises exception if the query wasn't found.
-    """
+@dataclass
+class QueryList:
+    title: str
+    on_change: Callable
+    items: list[Query] = field(default_factory=list)
+
+    def add(self, db_query: Query) -> None:
+        # Found this PR: https://github.com/zauberzeug/nicegui/pull/1951 but not sure if it got merged properly
+        if db_query.repeat is not None:
+            db_query.repeat = int(db_query.repeat)
+        self.items.append(db_query)
+        self.on_change()
+
+    def remove(self, query: Query) -> None:
+        self.items.remove(query)
+        self.on_change()
+
+
+class NoQueriesFoundError(Exception):
+    def __init__(self, *args):
+        detail = "Found no saved queries"
+        super().__init__(detail, args)
+
+
+def read_queries_saves_df() -> pd.DataFrame:
     try:
         saves_df = pd.read_csv(QUERIES_SAVES_CSV)
     except FileNotFoundError:
-        raise ValueError("Couldn't find db query id specified in saves file")
+        raise NoQueriesFoundError
+
+    if saves_df.empty:
+        raise NoQueriesFoundError
+
+    return saves_df
+
+
+def parse_database_ids(database_ids: str) -> list[str]:
+    "Parses `query.database_ids` field to a list"
+    if database_ids == "[]":
+        return []
+    return database_ids[1:-1].replace("'", "").split(", ")
+
+
+def find_query(id: str) -> Query:
+    """Checks and returns if query with id specified exists in saves file.
+
+    Raises exception if the query wasn't found.
+    """
+    saves_df = read_queries_saves_df()
 
     id_existing_index = saves_df.index[saves_df["id"] == id].to_list()
     if not id_existing_index:
-        raise ValueError("Couldn't find db query id specified in saves file")
+        raise NoQueriesFoundError("Couldn't find db query id specified in saves file")
 
     id_existing_index = saves_df.iloc[id_existing_index]
-    db_instance_ids = id_existing_index["db_instance_ids"].values[0]
+    database_ids = parse_database_ids(id_existing_index["database_ids"].values[0])
 
-    try:
-        db_instances: list[DatabaseInstance] = []
-        for db_id in db_instance_ids:
-            db_instances.append(find_db_instance(db_id))
-    except ValueError:
-        raise ValueError(
-            "Could not retrieve db query, since the db instance id wasn't found"
-        )
-
-    return DatabaseQuery(
+    return Query(
         id=id_existing_index["id"].values[0],
         name=id_existing_index["name"].values[0],
-        db_instances=db_instances,
+        database_ids=database_ids,
         sql=id_existing_index["sql"].values[0],
+        repeat=id_existing_index["repeat"].values[0],
+        query_count=id_existing_index["query_count"].values[0],
     )
 
 
-def delete_database_query(id: str) -> None:
-    find_database_query(id)  # Check if query exist and handle it
+def delete_query(id: str) -> None:
+    find_query(id)  # Check if query exist and handle it
 
-    saves_df = pd.read_csv(QUERIES_SAVES_CSV)
+    saves_df = read_queries_saves_df()
 
     id_existing_index = saves_df.index[saves_df["id"] == id].to_list()
     saves_df = saves_df.drop(id_existing_index)
@@ -83,25 +128,18 @@ def delete_all_queries() -> None:
     try:
         os.remove(QUERIES_SAVES_CSV)
     except FileNotFoundError:
-        print("All queries are already deleted")
+        app_logger.info("All queries are already deleted")
 
 
-def save_database_query(query: DatabaseQuery) -> None:
-    """
-    Saves `query` to a row in database saves csv file.
-
-    If `db_instance` has an existing `db_instance.id` in the saves, it replaces the row with
-    the existing `db_instance.id`"""
+def save_query(query: Query) -> None:
+    "Saves `query` to a row in query saves csv file."
     try:
-        saves_df = pd.read_csv(QUERIES_SAVES_CSV)
-    except FileNotFoundError:
-        cols = pd.Index(["id", "db_instance_ids", "name", "sql"])
+        saves_df = read_queries_saves_df()
+    except NoQueriesFoundError:
+        cols = pd.Index(["id", "database_ids", "name", "sql", "repeat", "query_count"])
         saves_df = pd.DataFrame(columns=cols)
         saves_df.to_csv(QUERIES_SAVES_CSV, index=False)
     query_dump = query.model_dump()
-
-    db_instances = query_dump.pop("db_instances")
-    query_dump["db_instance_ids"] = [db_instance["id"] for db_instance in db_instances]
 
     query_df = pd.DataFrame([query_dump])
     query_df = query_df.reindex(columns=saves_df.columns, fill_value=None)
@@ -115,30 +153,12 @@ def save_database_query(query: DatabaseQuery) -> None:
     saves_df.to_csv(QUERIES_SAVES_CSV, index=False)
 
 
-class NoQueriesFoundError(Exception):
-    def __init__(self, *args):
-        detail = "Found no saved queries, please add some queries before starting the program"
-        super().__init__(detail, args)
-
-
-def load_database_queries() -> pd.DataFrame:
-    try:
-        saves_df = pd.read_csv(QUERIES_SAVES_CSV)
-    except FileNotFoundError:
-        raise NoQueriesFoundError
-
-    if saves_df.empty:
-        raise NoQueriesFoundError
-
-    return saves_df
-
-
 def process_queries(queries: pd.DataFrame) -> None:
-    for _, row in queries.iterrows():
-        db_instance_ids = row.db_instance_ids[2:-2].replace("'", "").split(", ")
+    for index, (_, row) in enumerate(queries.iterrows(), start=1):
+        database_ids = parse_database_ids(row.database_ids)
         db_instances: list[DatabaseInstance] = []
-        for db_id in db_instance_ids:
-            db_instances.append(find_db_instance(db_id))
+        for db_id in database_ids:
+            db_instances.append(find_database_instance(db_id))
 
         for db_instance in db_instances:
             id_short = row["id"][:6]
@@ -147,7 +167,7 @@ def process_queries(queries: pd.DataFrame) -> None:
             sql = text(str(row["sql"]))
 
             explain_dump = execute_explain_stmt(
-                db_instance=db_instance, statement=sql, query_name=query_name
+                database_instance=db_instance, statement=sql, query_name=query_name
             )
 
             explain_dir = Path("/app/file/explain_output")

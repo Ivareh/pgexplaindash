@@ -8,7 +8,6 @@ models
 *.mp4
 *.db
 *.csv
-core
 .idea/*
 .ipynb_checkpoints
 *\.history
