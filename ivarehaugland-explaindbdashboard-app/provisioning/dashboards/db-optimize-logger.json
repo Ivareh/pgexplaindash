@@ -61,7 +61,7 @@
             "align": "auto",
             "cellOptions": {
               "type": "auto",
-              "wrapText": true
+              "wrapText": false
             },
             "inspect": true
           },
@@ -84,8 +84,7 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "ms"
+          }
         },
         "overrides": [
           {
@@ -96,7 +95,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 99
+                "value": 386
               }
             ]
           },
@@ -108,7 +107,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 1154
+                "value": 581
               }
             ]
           },
@@ -120,7 +119,23 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 123
+                "value": 172
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "total_exc_time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "custom.width",
+                "value": 205
               }
             ]
           }
@@ -174,20 +189,23 @@
           "id": "extractFields",
           "options": {
             "delimiter": ",",
-            "keepTime": false,
             "replace": true,
             "source": "message"
           }
         },
         {
-          "id": "sortBy",
+          "id": "organize",
           "options": {
-            "fields": {},
-            "sort": [
-              {
-                "field": "total_exc_time"
-              }
-            ]
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "count": 4,
+              "db_name": 0,
+              "query_name": 1,
+              "sql": 2,
+              "total_exc_time": 3
+            },
+            "renameByName": {}
           }
         }
       ],
@@ -865,16 +883,6 @@
             "replace": true,
             "source": "message"
           }
-        },
-        {
-          "disabled": true,
-          "id": "formatString",
-          "options": {
-            "outputFormat": "Substring",
-            "stringField": "index",
-            "substringEnd": 0,
-            "substringStart": 0
-          }
         }
       ],
       "transparent": true,
@@ -901,7 +909,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -978,6 +987,363 @@
         "uid": "PB99A0DFC953F515F"
       },
       "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "query_name"
+            },
+            "properties": []
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "db_name"
+            },
+            "properties": []
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "timing_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "(.*)(timing_ms|Time)(.*)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Node Type"
+            },
+            "properties": []
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "timing_ms"
+            },
+            "properties": []
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Actual Startup Time"
+            },
+            "properties": []
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Actual Total Time"
+            },
+            "properties": []
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total Cost"
+            },
+            "properties": []
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Actual Rows"
+            },
+            "properties": []
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "index"
+            },
+            "properties": []
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "node_type_detail"
+            },
+            "properties": []
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 31,
+        "w": 24,
+        "x": 0,
+        "y": 107
+      },
+      "id": 13,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.5.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "PB99A0DFC953F515F"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{job=\"vector\"} |= `explain_logger` != `level_divide` | json | keep message_total_exc_time, message_query_name | line_format `{{.message_total_exc_time}} {{.message_query_name}}`",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Execution for $query_name",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "replace": true,
+            "source": "labels"
+          }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "destinationType": "number",
+                "targetField": "message_total_exc_time"
+              }
+            ],
+            "fields": {}
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "${query_name}"
+                  }
+                },
+                "fieldName": "message_query_name"
+              }
+            ],
+            "match": "all",
+            "type": "include"
+          }
+        }
+      ],
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "PB99A0DFC953F515F"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "(.*)(timing_ms|Time|time)(.*)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "noValue",
+                "value": "null"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 31,
+        "w": 24,
+        "x": 0,
+        "y": 138
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "PB99A0DFC953F515F"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{job=\"vector\"} |= `explain_logger` != `level_divide` | json | keep message_count, message_total_exc_time, message_query_name | line_format `{{.message_total_exc_time}} {{.message_query_name}}`",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Rows Count and Time Metrics for $query_name",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "replace": true,
+            "source": "labels"
+          }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "destinationType": "number",
+                "targetField": "message_total_exc_time"
+              },
+              {
+                "destinationType": "number",
+                "targetField": "message_count"
+              }
+            ],
+            "fields": {}
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "${query_name}"
+                  }
+                },
+                "fieldName": "message_query_name"
+              }
+            ],
+            "match": "all",
+            "type": "include"
+          }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "destinationType": "boolean",
+                "enumConfig": {
+                  "text": [
+                    "2 week Replica dragon 3 to Level of all (Lightning Trap) Gems) (count: 4672)__POM default db__8a4d56"
+                  ]
+                },
+                "targetField": "message_query_name"
+              }
+            ],
+            "fields": {}
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "message_count": "Rows count",
+              "message_total_exc_time": "Total execution time"
+            }
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "PB99A0DFC953F515F"
+      },
+      "fieldConfig": {
         "defaults": {},
         "overrides": []
       },
@@ -985,7 +1351,7 @@
         "h": 27,
         "w": 24,
         "x": 0,
-        "y": 107
+        "y": 169
       },
       "id": 6,
       "options": {
@@ -995,16 +1361,16 @@
         "prettifyLogMessage": true,
         "showCommonLabels": false,
         "showLabels": false,
-        "showTime": true,
+        "showTime": false,
         "sortOrder": "Descending",
-        "wrapLogMessage": false
+        "wrapLogMessage": true
       },
       "pluginVersion": "11.5.3",
       "targets": [
         {
           "direction": "backward",
           "editorMode": "builder",
-          "expr": "{job=\"vector\"} |= `\"source_type\":\"explain_file_json\"` |= `$query_name` | json",
+          "expr": "{job=\"vector\"} |= `explain_file_json` | json",
           "queryType": "range",
           "refId": "A"
         }
@@ -1012,21 +1378,38 @@
       "title": "Plan Raw",
       "transformations": [
         {
+          "id": "extractFields",
+          "options": {
+            "delimiter": ",",
+            "keepTime": false,
+            "replace": false,
+            "source": "Line"
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "${query_name}.json"
+                  }
+                },
+                "fieldName": "file"
+              }
+            ],
+            "match": "all",
+            "type": "include"
+          }
+        },
+        {
           "id": "filterFieldsByName",
           "options": {
             "include": {
               "pattern": "Line|Time"
             }
-          }
-        },
-        {
-          "disabled": true,
-          "id": "extractFields",
-          "options": {
-            "delimiter": ",",
-            "keepTime": true,
-            "replace": true,
-            "source": "Line"
           }
         }
       ],
@@ -1088,6 +1471,6 @@
   "timezone": "browser",
   "title": "TESTING Explain Analyze Logs",
   "uid": "d09b90a5-7749-42b0-b7e1-21274614203f",
-  "version": 1,
+  "version": 18,
   "weekStart": ""
 }

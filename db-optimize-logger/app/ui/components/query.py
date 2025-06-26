@@ -59,7 +59,7 @@ def _saved_queries_ui(queries: QueryList, databases: list[str]):
                     )
                 with ui.row().classes("mx-auto items-stretch"):
                     ui_int_input(
-                        label="Repeat",
+                        label="?Repeat",
                         value=query.repeat,
                         attr_name="repeat",
                         bind_object=query,
@@ -224,7 +224,7 @@ def _add_queries_component(queries: QueryList, databases: list[str]) -> None:
         with ui.row().classes("mx-auto items-stretch mt-8"):
             add_repeat = create_field_with_tooltip(
                 "Times to repeat the query (for each database specified). Compare multiple executes",
-                lambda: ui.number("Repeat").classes("w-[160Bpx]"),
+                lambda: ui.number("?Repeat").classes("w-[160Bpx]"),
             )
             add_query_count = create_field_with_tooltip(
                 "(NB! Only for `SELECT` queries): Whether to perform an additional COUNT(*) query to check how many rows the execute returns",
