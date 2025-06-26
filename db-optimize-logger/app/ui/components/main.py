@@ -44,14 +44,12 @@ async def start_queries_logger(client: DockerClient, queries_progress: Progress)
 
             await start_log(queries_progress)
             notify_and_log(
-                "Successfully ran logs. Check them at http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home",
+                "Successfully ran logs for queries. Check them at http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home",
                 "positive",
             )
         except Exception as e:
             queries_progress.set_loading(False)
-            notify_and_log(
-                f"An error occured while starting loki container: {e}", "negative"
-            )
+            notify_and_log(f"An error occured while running queries: {e}", "negative")
             return
         finally:
             queries_progress.set_loading(False)
