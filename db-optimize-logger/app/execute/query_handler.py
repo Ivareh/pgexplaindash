@@ -2,6 +2,7 @@ import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+from uuid import uuid4
 
 import pandas as pd
 from pydantic import BaseModel, Field, field_validator
@@ -72,7 +73,18 @@ class NoQueriesFoundError(Exception):
 
 def read_queries_saves_df() -> pd.DataFrame:
     try:
-        saves_df = pd.read_csv(QUERIES_SAVES_CSV)
+        saves_df = pd.read_csv(
+            QUERIES_SAVES_CSV,
+            dtype={
+                "id": "string",
+                "database_ids": "string",
+                "name": "string",
+                "sql": "string",
+                "repeat": "Int64",
+                "query_count": "string",
+            },
+        )
+        saves_df["repeat"] = saves_df["repeat"].fillna(0).astype("int64")
     except FileNotFoundError:
         raise NoQueriesFoundError
 
@@ -153,86 +165,106 @@ def save_query(query: Query) -> None:
     saves_df.to_csv(QUERIES_SAVES_CSV, index=False)
 
 
+def query_run_times(query_row: pd.Series) -> int:
+    "Finds how many times to run a query based on `repeat` property"
+    repeat = query_row.loc["repeat"]
+    if pd.isna(repeat):
+        repeat = 0
+    else:
+        repeat = int(repeat)
+    run_times = repeat + 1 if repeat > 0 else 1
+    return run_times
+
+
+def define_query_name(query_row: pd.Series, db_name: str) -> str:
+    "Defines an unique name for query with db_instance partial uuid4"
+    run_id = str(uuid4())[:6]
+    query_name = f"{query_row['name']}__{db_name}__{run_id}"
+    return query_name
+
+
 def process_queries(queries: pd.DataFrame) -> None:
-    for index, (_, row) in enumerate(queries.iterrows(), start=1):
-        database_ids = parse_database_ids(row.database_ids)
+    for index, (_, query_row) in enumerate(queries.iterrows(), start=1):
+        database_ids = parse_database_ids(query_row.database_ids)
         db_instances: list[DatabaseInstance] = []
         for db_id in database_ids:
             db_instances.append(find_database_instance(db_id))
 
+        run_times = query_run_times(query_row)
         for db_instance in db_instances:
-            id_short = row["id"][:6]
-            db_name = db_instance.name
-            query_name = f"{row['name']}__{db_name}__{id_short}"
-            sql = text(str(row["sql"]))
-
-            explain_dump = execute_explain_stmt(
-                database_instance=db_instance, statement=sql, query_name=query_name
-            )
-
-            explain_dir = Path("/app/file/explain_output")
-
-            explain_df = pd.DataFrame([explain_dump])
-
-            explain_df.to_json(
-                explain_dir / f"{query_name}.json", orient="records", lines=True
-            )
-
-            explain_df = process_explain_df(explain_df)
-            log_key_value(
-                explain_logger,
-                {
-                    "db_name": db_name,
-                    "query_name": query_name,
-                    "sql": str(row["sql"]),
-                    "total_exc_time": explain_dump[PlanEnum.EXECUTION_TIME],
-                },
-            )
-
-            node_series = extract_node_series(explain_df)
-
-            node_metrics_df = create_node_metrics_df(node_series)
-
-            graphnode_df = create_graphnode_table(node_series)
-            graphedge_df = create_graphedge_table(node_series)
-
-            node_metrics_dict = node_metrics_df.to_dict(orient="records")
-            graphnode_dict = graphnode_df.to_dict(orient="records")
-            graphedge_dict = graphedge_df.to_dict(orient="records")
-
-            for node in node_metrics_dict:
-                graph_node_logger.info(
-                    f"db_name={db_name}&query_name={query_name}&node={node}"
-                )
-            for node in graphnode_dict:
-                graph_node_logger.info(
-                    f"db_name={db_name}&query_name={query_name}&node={node}"
-                )
-            for edge in graphedge_dict:
-                graph_node_logger.info(
-                    f"db_name={db_name}&query_name={query_name}&edge={edge}"
+            for _ in range(run_times):
+                sql = text(str(query_row["sql"]))
+                db_name = db_instance.name
+                query_name = define_query_name(query_row, db_name)
+                explain_dump = execute_explain_stmt(
+                    database_instance=db_instance, statement=sql, query_name=query_name
                 )
 
-            level_divider_df = create_level_divider(node_series)
-            level_divider_dict = level_divider_df.to_dict(orient="records")
-            n = len(level_divider_dict)
+                explain_dir = Path("/app/file/explain_output")
 
-            max_index_width = 1 + len(str(n - 1)) if n > 0 else 0
+                explain_df = pd.DataFrame([explain_dump])
 
-            for index, level in enumerate(level_divider_dict):
-                prefix_index = "0" if len(str(index)) < 2 else ""
-                index_str = prefix_index + str(index)
-                padded_index = index_str.ljust(max_index_width)  # Pad to fixed width
-                padded_index = padded_index.replace(" ", "\u00a0")
-                full_log_line = (
-                    f"{padded_index} {level['nodes']}"  # Combine with log content
+                explain_df.to_json(
+                    explain_dir / f"{query_name}.json", orient="records", lines=True
                 )
 
+                explain_df = process_explain_df(explain_df)
                 log_key_value(
                     explain_logger,
-                    log_dict={
+                    {
                         "db_name": db_name,
                         "query_name": query_name,
-                        "level_divide": full_log_line,  # Use aligned log line
+                        "sql": str(query_row["sql"]),
+                        "total_exc_time": explain_dump[PlanEnum.EXECUTION_TIME],
                     },
                 )
+
+                node_series = extract_node_series(explain_df)
+
+                node_metrics_df = create_node_metrics_df(node_series)
+
+                graphnode_df = create_graphnode_table(node_series)
+                graphedge_df = create_graphedge_table(node_series)
+
+                node_metrics_dict = node_metrics_df.to_dict(orient="records")
+                graphnode_dict = graphnode_df.to_dict(orient="records")
+                graphedge_dict = graphedge_df.to_dict(orient="records")
+
+                for node in node_metrics_dict:
+                    graph_node_logger.info(
+                        f"db_name={db_name}&query_name={query_name}&node={node}"
+                    )
+                for node in graphnode_dict:
+                    graph_node_logger.info(
+                        f"db_name={db_name}&query_name={query_name}&node={node}"
+                    )
+                for edge in graphedge_dict:
+                    graph_node_logger.info(
+                        f"db_name={db_name}&query_name={query_name}&edge={edge}"
+                    )
+
+                level_divider_df = create_level_divider(node_series)
+                level_divider_dict = level_divider_df.to_dict(orient="records")
+                n = len(level_divider_dict)
+
+                max_index_width = 1 + len(str(n - 1)) if n > 0 else 0
+
+                for index, level in enumerate(level_divider_dict):
+                    prefix_index = "0" if len(str(index)) < 2 else ""
+                    index_str = prefix_index + str(index)
+                    padded_index = index_str.ljust(
+                        max_index_width
+                    )  # Pad to fixed width
+                    padded_index = padded_index.replace(" ", "\u00a0")
+                    full_log_line = (
+                        f"{padded_index} {level['nodes']}"  # Combine with log content
+                    )
+
+                    log_key_value(
+                        explain_logger,
+                        log_dict={
+                            "db_name": db_name,
+                            "query_name": query_name,
+                            "level_divide": full_log_line,  # Use aligned log line
+                        },
+                    )
