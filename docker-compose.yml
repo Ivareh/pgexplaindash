@@ -40,7 +40,6 @@ services:
     volumes:
       - ./file/explain_output:/app/file/explain_output
       - ./file/graphs_output:/app/file/graphs_output
-      - ./db-optimize-logger/:/app
       - ${OPTIONAL_DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
     labels:
       - traefik.enable=true
