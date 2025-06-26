@@ -1,4 +1,5 @@
 import os
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -12,6 +13,7 @@ from app.core.interface import PlanEnum
 from app.core.utils import log_key_value
 from app.execute.database import (
     DatabaseInstance,
+    execute_count_stmt,
     execute_explain_stmt,
     find_database_instance,
 )
@@ -81,7 +83,7 @@ def read_queries_saves_df() -> pd.DataFrame:
                 "name": "string",
                 "sql": "string",
                 "repeat": "Int64",
-                "query_count": "string",
+                "query_count": "boolean",
             },
         )
         saves_df["repeat"] = saves_df["repeat"].fillna(0).astype("int64")
@@ -183,7 +185,25 @@ def define_query_name(query_row: pd.Series, db_name: str) -> str:
     return query_name
 
 
+def get_count(*, sql_str: str, query_name: str, db_instance: DatabaseInstance) -> int:
+    pattern = r"^\s*EXPLAIN\s*\(\s*ANALYZE\s*,\s*FORMAT\s*JSON\s*\)\s*"
+    original_sql = re.sub(pattern, "", sql_str, flags=re.IGNORECASE).strip()
+    if original_sql.endswith(";"):
+        original_sql = original_sql[:-1].strip()
+    if not original_sql.startswith("SELECT"):
+        raise ValueError(f"Can't perform COUNT(*) on non-`SELECT` query: {query_name}")
+    count_sql = text(f"SELECT COUNT(*) FROM ({original_sql}) AS count_subquery")
+    count_dump = execute_count_stmt(
+        database_instance=db_instance,
+        statement=count_sql,
+        query_name=query_name,
+    )
+    return count_dump["count"]
+
+
 def process_queries(queries: pd.DataFrame) -> None:
+    "This function is crap and needs to be refactored and more tidy"
+
     for index, (_, query_row) in enumerate(queries.iterrows(), start=1):
         database_ids = parse_database_ids(query_row.database_ids)
         db_instances: list[DatabaseInstance] = []
@@ -193,11 +213,33 @@ def process_queries(queries: pd.DataFrame) -> None:
         run_times = query_run_times(query_row)
         for db_instance in db_instances:
             for _ in range(run_times):
-                sql = text(str(query_row["sql"]))
+                explain_log_obj = {}
+
+                sql_str = str(query_row["sql"])
+
                 db_name = db_instance.name
                 query_name = define_query_name(query_row, db_name)
+
+                if query_row.query_count:
+                    explain_log_obj["count"] = get_count(
+                        sql_str=sql_str, query_name=query_name, db_instance=db_instance
+                    )
+
+                sql = text(sql_str)
                 explain_dump = execute_explain_stmt(
                     database_instance=db_instance, statement=sql, query_name=query_name
+                )
+
+                explain_log_obj = {
+                    "db_name": db_name,
+                    "query_name": query_name,
+                    "sql": str(query_row["sql"]),
+                    "total_exc_time": explain_dump[PlanEnum.EXECUTION_TIME],
+                    **explain_log_obj,
+                }
+                log_key_value(
+                    explain_logger,
+                    explain_log_obj,
                 )
 
                 explain_dir = Path("/app/file/explain_output")
@@ -209,15 +251,6 @@ def process_queries(queries: pd.DataFrame) -> None:
                 )
 
                 explain_df = process_explain_df(explain_df)
-                log_key_value(
-                    explain_logger,
-                    {
-                        "db_name": db_name,
-                        "query_name": query_name,
-                        "sql": str(query_row["sql"]),
-                        "total_exc_time": explain_dump[PlanEnum.EXECUTION_TIME],
-                    },
-                )
 
                 node_series = extract_node_series(explain_df)
 

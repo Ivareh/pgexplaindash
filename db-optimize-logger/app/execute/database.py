@@ -212,7 +212,7 @@ def execute_explain_stmt(
 ) -> dict[Any, Any]:
     # Returns JSON string representation of explain query
     explain_logger.info(
-        f"Performing query in db.id={database_instance.id} with query_name={query_name}"
+        f"Performing explain query in db.id={database_instance.id} with query_name={query_name}"
     )
     with database_instance.engine.begin() as conn:
         explain = conn.execute(statement)
@@ -224,3 +224,23 @@ def execute_explain_stmt(
 
     assert isinstance(explain_dump, dict)
     return explain_dump
+
+
+def execute_count_stmt(
+    database_instance: DatabaseInstance,
+    statement: TextClause,
+    query_name: str,
+) -> dict[Any, Any]:
+    explain_logger.info(
+        f"Performing count query in db.id={database_instance.id} with query_name={query_name}"
+    )
+    with database_instance.engine.begin() as conn:
+        count = conn.execute(statement)
+
+    assert count
+
+    count_dump: dict[Any, Any] = {"count": count.scalar_one()}
+    count_dump["database"] = database_instance.name + "_" + database_instance.id[:6]
+
+    assert isinstance(count_dump, dict)
+    return count_dump

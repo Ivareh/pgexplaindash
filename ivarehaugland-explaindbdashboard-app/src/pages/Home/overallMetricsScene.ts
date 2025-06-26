@@ -87,6 +87,7 @@ export function overallMetricsScene() {
         id: 'extractFields',
         options: {
           delimiter: ',',
+          keepTime: false,
           replace: true,
           source: 'Line',
         },
@@ -100,12 +101,32 @@ export function overallMetricsScene() {
         },
       },
       {
-        id: 'sortBy',
+        id: 'organize',
+        options: {
+          excludeByName: {},
+          includeByName: {},
+          indexByName: {
+            count: 4,
+            db_name: 0,
+            query_name: 1,
+            sql: 2,
+            total_exc_time: 3,
+          },
+          renameByName: {},
+        },
+      },
+      {
+        id: 'convertFieldType',
         options: {
           fields: {},
-          sort: [
+          conversions: [
             {
-              field: 'total_exc_time',
+              targetField: 'count',
+              destinationType: 'number',
+            },
+            {
+              targetField: 'total_exc_time',
+              destinationType: 'number',
             },
           ],
         },
@@ -238,16 +259,17 @@ export function overallMetricsScene() {
                   align: 'auto',
                   cellOptions: {
                     type: 'auto',
+                    wrapText: false,
                   },
                   inspect: true,
                 },
                 mappings: [],
                 thresholds: {
-                  mode: 'absolute' as ThresholdsMode, // ignore
+                  mode: 'absolute' as ThresholdsMode,
                   steps: [
                     {
                       color: 'green',
-                      value: 1,
+                      value: 0,
                     },
                     {
                       color: 'red',
@@ -264,7 +286,6 @@ export function overallMetricsScene() {
                     url: 'http://localhost:3000/a/ivarehaugland-explaindbdashboard-app/home/per-query-metrics?from=now-72h&to=now&timezone=browser&var-query_name=${__data.fields.query_name}',
                   },
                 ],
-                unit: 'ms',
               },
               overrides: [
                 {
@@ -275,7 +296,7 @@ export function overallMetricsScene() {
                   properties: [
                     {
                       id: 'custom.width',
-                      value: 199,
+                      value: 386,
                     },
                   ],
                 },
@@ -287,7 +308,7 @@ export function overallMetricsScene() {
                   properties: [
                     {
                       id: 'custom.width',
-                      value: 1054,
+                      value: 581,
                     },
                   ],
                 },
@@ -299,7 +320,23 @@ export function overallMetricsScene() {
                   properties: [
                     {
                       id: 'custom.width',
-                      value: 123,
+                      value: 172,
+                    },
+                  ],
+                },
+                {
+                  matcher: {
+                    id: 'byName',
+                    options: 'total_exc_time',
+                  },
+                  properties: [
+                    {
+                      id: 'unit',
+                      value: 'ms',
+                    },
+                    {
+                      id: 'custom.width',
+                      value: 205,
                     },
                   ],
                 },

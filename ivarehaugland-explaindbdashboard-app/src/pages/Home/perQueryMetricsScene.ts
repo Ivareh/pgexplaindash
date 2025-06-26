@@ -305,7 +305,7 @@ export function perQueryMetricScene() {
     queries: [
       {
         ...queryRunner.state.queries[0],
-        expr: `{job="vector"} |= \`explain_logger\` |= \`$query_name\` != \`level_divide\` |= \`total_exc_time\` | json | keep message_total_exc_time, message_query_name | line_format \`{{.message_total_exc_time}} {{.message_query_name}}\``,
+        expr: `{job="vector"} |= \`explain_logger\` != \`level_divide\` | json | keep message_count, message_total_exc_time, message_query_name | line_format \`{{.message_total_exc_time}} {{.message_query_name}}\``,
       },
     ],
   });
@@ -329,8 +329,57 @@ export function perQueryMetricScene() {
               destinationType: 'number',
               targetField: 'message_total_exc_time',
             },
+            {
+              destinationType: 'number',
+              targetField: 'message_count',
+            },
           ],
           fields: {},
+        },
+      },
+      {
+        id: 'filterByValue',
+        options: {
+          filters: [
+            {
+              config: {
+                id: 'equal',
+                options: {
+                  value: '${query_name}',
+                },
+              },
+              fieldName: 'message_query_name',
+            },
+          ],
+          match: 'all',
+          type: 'include',
+        },
+      },
+      {
+        id: 'convertFieldType',
+        options: {
+          conversions: [
+            {
+              destinationType: 'boolean',
+              enumConfig: {
+                text: [],
+              },
+              targetField: 'message_query_name',
+            },
+          ],
+          fields: {},
+        },
+      },
+      {
+        id: 'organize',
+        options: {
+          excludeByName: {},
+          includeByName: {},
+          indexByName: {},
+          renameByName: {
+            message_count: 'Rows count',
+            message_total_exc_time: 'Total execution time',
+          },
         },
       },
     ],
@@ -401,7 +450,7 @@ export function perQueryMetricScene() {
             },
             options: {
               VariableSort: 3,
-              expandLevel: 0,
+              expandLevel: 2,
               orderLevels: 'asc',
               rootName: 'Level order tree',
               serieColumn: 'serieColumn',
@@ -618,23 +667,14 @@ export function perQueryMetricScene() {
           }),
         }),
         new SceneFlexItem({
-          width: 400,
-          minWidth: 400,
-          minHeight: 400,
+          minWidth: 530,
+          minHeight: 500,
           body: new VizPanel({
             $data: totalExecutionData,
-            pluginId: 'gauge',
-            title: 'Total Execution Time for $query_name',
+            pluginId: 'stat',
+            title: 'Total time and rows count for $query_name',
             fieldConfig: {
               defaults: {
-                custom: {
-                  align: 'auto',
-                  cellOptions: {
-                    type: 'auto',
-                    wrapText: true,
-                  },
-                  inspect: true,
-                },
                 mappings: [],
                 thresholds: {
                   mode: 'absolute' as ThresholdsMode,
@@ -653,30 +693,21 @@ export function perQueryMetricScene() {
                   mode: 'thresholds',
                 },
                 links: [],
-                unit: 'ms',
               },
-              overrides: [],
-            },
-            options: {
-              displayMode: 'lcd',
-              legend: {
-                calcs: [],
-                displayMode: 'list',
-                placement: 'bottom',
-                showLegend: false,
-              },
-              maxVizHeight: 300,
-              minVizHeight: 16,
-              minVizWidth: 8,
-              namePlacement: 'top',
-              orientation: 'horizontal',
-              reduceOptions: {
-                calcs: [],
-                values: true,
-              },
-              showUnfilled: true,
-              sizing: 'auto',
-              valueMode: 'color',
+              overrides: [
+                {
+                  matcher: {
+                    id: 'byRegexp',
+                    options: '(.*)(timing_ms|Time|time)(.*)',
+                  },
+                  properties: [
+                    {
+                      id: 'unit',
+                      value: 'ms',
+                    },
+                  ],
+                },
+              ],
             },
           }),
         }),
