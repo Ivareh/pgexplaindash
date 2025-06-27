@@ -399,21 +399,62 @@ export function perQueryMetricScene() {
     $data: planRawRunner,
     transformations: [
       {
+        id: 'extractFields',
+        options: {
+          delimiter: ',',
+          keepTime: false,
+          replace: false,
+          source: 'Line',
+        },
+      },
+      {
+        id: 'filterByValue',
+        options: {
+          filters: [
+            {
+              config: {
+                id: 'equal',
+                options: {
+                  value: '${query_name}.json',
+                },
+              },
+              fieldName: 'file',
+            },
+          ],
+          match: 'all',
+          type: 'include',
+        },
+      },
+      {
         id: 'filterFieldsByName',
         options: {
           include: {
-            pattern: 'Line|Time',
+            pattern: 'Time|message',
           },
         },
       },
       {
-        disabled: true,
-        id: 'extractFields',
+        id: 'organize',
         options: {
-          delimiter: ',',
-          keepTime: true,
-          replace: true,
-          source: 'Line',
+          excludeByName: {},
+          includeByName: {},
+          indexByName: {},
+          renameByName: {
+            Line: '',
+            message: 'Line',
+          },
+        },
+      },
+      {
+        id: 'convertFieldType',
+        options: {
+          conversions: [
+            {
+              destinationType: 'string',
+              targetField: 'Line',
+            },
+          ],
+          fields: {},
         },
       },
     ],
