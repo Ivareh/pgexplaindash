@@ -13,7 +13,7 @@ from sqlalchemy import Engine, TextClause, create_engine, engine
 from app.core.utils import log_key_value
 from app.logs.logger import app_logger, db_logger, explain_logger
 
-DATABASES_SAVES_CSV = Path("app/saves/databases.csv")
+DATABASES_SAVES_CSV = Path("/app/saves/databases.csv")
 
 
 class DatabaseInstance(BaseModel):

@@ -26,7 +26,7 @@ from app.execute.node_graph_plan import (
 from app.execute.node_process import extract_node_series, process_explain_df
 from app.logs.logger import app_logger, explain_logger, graph_node_logger
 
-QUERIES_SAVES_CSV = Path("app/saves/queries.csv")
+QUERIES_SAVES_CSV = Path("/app/saves/queries.csv")
 
 
 class Query(BaseModel):
