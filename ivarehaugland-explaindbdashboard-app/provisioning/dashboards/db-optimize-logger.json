@@ -76,8 +76,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -236,8 +235,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -533,8 +531,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -909,8 +906,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -997,8 +993,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1197,8 +1192,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1408,8 +1402,32 @@
           "id": "filterFieldsByName",
           "options": {
             "include": {
-              "pattern": "Line|Time"
+              "pattern": "Time|message"
             }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Line": "",
+              "message": "Line"
+            }
+          }
+        },
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "destinationType": "string",
+                "targetField": "Line"
+              }
+            ],
+            "fields": {}
           }
         }
       ],
@@ -1471,6 +1489,6 @@
   "timezone": "browser",
   "title": "TESTING Explain Analyze Logs",
   "uid": "d09b90a5-7749-42b0-b7e1-21274614203f",
-  "version": 18,
+  "version": 1,
   "weekStart": ""
 }
