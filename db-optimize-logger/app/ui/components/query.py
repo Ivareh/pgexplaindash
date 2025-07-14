@@ -38,6 +38,9 @@ def _saved_queries_ui(queries: QueryList, databases: list[str]):
     for query in queries.items:
         with ui.column().classes("w-full items-stretch border rounded p-4 mb-4 gap-4"):
             with ui.row().classes("w-full items-center gap-2"):
+                ui.checkbox("Active", value=query.active).classes(
+                    "flex-grow w-[160px]"
+                ).bind_value(query, "active")
                 ui.input("Query name", value=query.name).classes(
                     "flex-grow w-full"
                 ).bind_value(query, "name")
@@ -100,6 +103,7 @@ def _add_query_handler(
             sql=add_sql.value,
             repeat=add_repeat.value,
             query_count=add_query_count.value,
+            active=True,
         )
 
         # Save in csv and add to UI
@@ -175,6 +179,7 @@ def _ui_load_queries(queries: QueryList):
             "sql": query_row["sql"],
             "repeat": query_row["repeat"],
             "query_count": bool(query_row["query_count"]),
+            "active": bool(query_row["active"]),
         }
         db_query = Query(**db_query_dict)
         queries.add(db_query)
