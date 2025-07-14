@@ -36,6 +36,7 @@ class Query(BaseModel):
     sql: str = Field(min_length=1)
     repeat: int | None
     query_count: bool
+    active: bool = True  # Whether to execute query or not
 
     @property
     def statement(self) -> TextClause:
@@ -84,6 +85,7 @@ def read_queries_saves_df() -> pd.DataFrame:
                 "sql": "string",
                 "repeat": "Int64",
                 "query_count": "boolean",
+                "active": "boolean",
             },
         )
         saves_df["repeat"] = saves_df["repeat"].fillna(0).astype("int64")
@@ -124,6 +126,7 @@ def find_query(id: str) -> Query:
         sql=id_existing_index["sql"].values[0],
         repeat=id_existing_index["repeat"].values[0],
         query_count=id_existing_index["query_count"].values[0],
+        active=id_existing_index["active"].values[0],
     )
 
 
@@ -150,7 +153,9 @@ def save_query(query: Query) -> None:
     try:
         saves_df = read_queries_saves_df()
     except NoQueriesFoundError:
-        cols = pd.Index(["id", "database_ids", "name", "sql", "repeat", "query_count"])
+        cols = pd.Index(
+            ["id", "database_ids", "name", "sql", "repeat", "query_count", "active"]
+        )
         saves_df = pd.DataFrame(columns=cols)
         saves_df.to_csv(QUERIES_SAVES_CSV, index=False)
     query_dump = query.model_dump()
@@ -205,6 +210,9 @@ def process_queries(queries: pd.DataFrame) -> None:
     "This function is crap and needs to be refactored and more tidy"
 
     for index, (_, query_row) in enumerate(queries.iterrows(), start=1):
+        if not query_row.active:
+            continue
+
         database_ids = parse_database_ids(query_row.database_ids)
         db_instances: list[DatabaseInstance] = []
         for db_id in database_ids:
